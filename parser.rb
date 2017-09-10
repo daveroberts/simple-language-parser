@@ -1,6 +1,7 @@
 require 'pry'
 
-file = File.read('sample.scrape')
+script = ARGV[0] || 'sample.scrape'
+file = File.read(script)
 program = file.split " "
 @stack = []
 @variables = {}
@@ -81,6 +82,8 @@ def evaluate(program)
     elsif cmd == "val"
       sym = @stack.pop
       @stack.push @variables[sym]
+    elsif cmd == "first"
+      @stack.push @stack.pop.first
     elsif cmd == "push"
       value = @stack.pop
       sym = @stack.pop

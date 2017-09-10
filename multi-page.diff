@@ -1,0 +1,10 @@
+8c8,14
+<   ".article-content" grabcss :body let
+---
+>   :body_parts arr
+>     :body_parts ".article-content" grabcss push
+>   [
+>     ".next_page_link" click
+>     :body_parts ".article-content" grabcss push
+>   ] [ ] "false.next_page_link" has_element? if
+>   :body_parts val concat :body let

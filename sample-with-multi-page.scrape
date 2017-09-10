@@ -5,7 +5,13 @@ grablinks :links let
 [
   :link val go
   "h1" grabcss :title let
-  ".article-content" grabcss :body let
+  :body_parts arr
+    :body_parts ".article-content" grabcss push
+  [
+    ".next_page_link" click
+    :body_parts ".article-content" grabcss push
+  ] [ ] "false.next_page_link" has_element? if
+  :body_parts val concat :body let
   :scraped_page map
     :link val :url :scraped_page set
     :title val :title :scraped_page set
