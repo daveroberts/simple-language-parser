@@ -1,10 +1,9 @@
 require 'pry'
+require 'json'
 
 script = ARGV[0] || 'sample.scrape'
 file = File.read(script)
 program = file.split " "
-@stack = []
-@variables = {}
 
 def go(url)
   #puts "Navigating browser to #{url}"
@@ -39,102 +38,114 @@ def has_element?(sel)
   return sel.start_with? "true"
 end
 
-def evaluate(program)
+@variables = {}
+
+def run(program)
+  stack = program
+  value = nil
   loop do
-    break if program.length == 0
-    cmd = program.shift
-    if cmd.start_with? '"'
-      strval = cmd[1..cmd.length-2]
-      @stack.push strval
-    elsif cmd.start_with? "/"
-      @stack.push Regexp.new(cmd)
-    elsif cmd.start_with? ":"
-      @stack.push cmd[1..cmd.length].to_sym
-    elsif cmd == "["
-      arr = []
-      count = 1
-      loop do
-        next_cmd = program.shift
-        count = count + 1 if next_cmd == '['
-        count = count - 1 if next_cmd == ']'
-        break if count == 0
-        arr.push next_cmd
-      end
-      @stack.push arr
-    elsif cmd == "let"
-      sym = @stack.pop
-      value = @stack.pop
-      @variables[sym] = value
-    elsif cmd == "print"
-      sym = @stack.pop
-      puts @variables[sym]
-    elsif cmd == "set"
-      map = @stack.pop
-      sym = @stack.pop
-      value = @stack.pop
-      @variables[map][sym] = value
-    elsif cmd == "arr"
-      sym = @stack.pop
-      @variables[sym] = []
-    elsif cmd == "map"
-      sym = @stack.pop
-      @variables[sym] = {}
-    elsif cmd == "val"
-      sym = @stack.pop
-      @stack.push @variables[sym]
-    elsif cmd == "first"
-      @stack.push @stack.pop.first
-    elsif cmd == "push"
-      value = @stack.pop
-      sym = @stack.pop
-      @variables[sym].push value
-    elsif cmd == "loop"
-      sym = @stack.pop
-      collection = @variables[@stack.pop]
-      loop = @stack.pop
-      collection.each do |item|
-        @variables[sym] = item
-        evaluate(loop.dup)
-      end
-    elsif cmd == "if"
-      bool = @stack.pop
-      f_block = @stack.pop
-      t_block = @stack.pop
-      if bool
-        evaluate(t_block.dup)
-      else
-        evaluate(f_block.dup)
-      end
-    elsif cmd == "concat"
-      arr = @stack.pop
-      @stack.push(arr.join())
-    elsif cmd == "go"
-      url = @stack.pop
-      go(url)
-    elsif cmd == "grablinks"
-      links = grablinks()
-      @stack.push(links)
-    elsif cmd == "grabcss"
-      sel = @stack.pop
-      content = grabcss(sel)
-      @stack.push(content)
-    elsif cmd == "has_element?"
-      sel = @stack.pop
-      @stack.push(has_element?(sel))
-    elsif cmd == "click"
-      sel = @stack.pop
-      click(sel)
-    elsif cmd == "parselinks"
-      sym = @stack.pop
-      links = @variables[sym]
-      regex = @stack.pop
-      parsed_links = parselinks(links, regex)
-      @stack.push(parsed_links)
-    else
-      puts "I don't understand #{cmd}"
-      exit(-1)
+    break if stack.length == 0
+    value = pop(stack)
+  end
+  return value
+end
+
+def pop(stack)
+  cmd = stack.shift
+  if cmd == '('
+    block = []
+    count = 1
+    loop do
+      loop_cmd = stack.shift
+      count = count + 1 if loop_cmd == '('
+      count = count - 1 if loop_cmd == ')'
+      break if count == 0
+      block.push loop_cmd
     end
+    block_val = run(block)
+    return block_val
+  elsif cmd == '{'
+    block = []
+    count = 1
+    loop do
+      loop_cmd = stack.shift
+      count = count + 1 if loop_cmd == '{'
+      count = count - 1 if loop_cmd == '}'
+      break if count == 0
+      block.push loop_cmd
+    end
+    return block
+  elsif cmd.start_with? '"'
+    return cmd[1..cmd.length-2]
+  elsif cmd.start_with? ":"
+    return cmd[1..cmd.length].to_sym
+  elsif cmd.start_with? "/"
+    return Regexp.new(cmd)
+  elsif cmd == 'set'
+    sym = pop(stack)
+    value = pop(stack)
+    @variables[sym] = value
+  elsif cmd == 'get'
+    sym = pop(stack)
+    return @variables[sym]
+  elsif cmd == 'map'
+    sym = pop(stack)
+    @variables[sym] = {}
+  elsif cmd == 'setmap'
+    map = pop(stack)
+    sym = pop(stack)
+    val = pop(stack)
+    @variables[map][sym] = val
+  elsif cmd == 'arr'
+    sym = pop(stack)
+    @variables[sym] = []
+  elsif cmd == 'push'
+    sym = pop(stack)
+    val = pop(stack)
+    @variables[sym].push(val)
+  elsif cmd == 'join'
+    arr = pop(stack)
+    return arr.join
+  elsif cmd == 'loop'
+    collection = pop(stack)
+    sym = pop(stack)
+    block = pop(stack)
+    collection.each do |item|
+      @variables[sym] = item
+      run(block)
+    end
+  elsif cmd == 'if'
+    predicate = pop(stack)
+    t_block = pop(stack)
+    f_block = pop(stack)
+    value = run(t_block) if predicate
+    value = run(f_block) if !predicate
+  elsif cmd == 'json'
+    val = pop(stack)
+    return val.to_json
+  elsif cmd == 'go'
+    url = pop(stack)
+    go(url)
+  elsif cmd == 'grablinks'
+    return grablinks()
+  elsif cmd == 'grabcss'
+    sel = pop(stack)
+    return grabcss(sel)
+  elsif cmd == 'parselinks'
+    links = pop(stack)
+    regex = pop(stack)
+    return parselinks(links, regex)
+  elsif cmd == 'has_element?'
+    sel = pop(stack)
+    return has_element? sel
+  elsif cmd == 'click'
+    sel = pop(stack)
+    click(sel)
+  else
+    puts "I don't know how to `#{cmd}`"
+    exit(-1)
   end
 end
 
-evaluate(program)
+value = run(program)
+puts value

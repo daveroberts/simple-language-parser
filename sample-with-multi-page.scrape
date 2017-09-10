@@ -1,21 +1,20 @@
-"https://news.example.com" go
-grablinks :links let
-/a[href=somepattern]/ :links parselinks :links let
-:scrape_data arr
-[
-  :link val go
-  "h1" grabcss :title let
-  :body_parts arr
-    :body_parts ".article-content" grabcss push
-  [
-    ".next_page_link" click
-    :body_parts ".article-content" grabcss push
-  ] [ ] "false.next_page_link" has_element? if
-  :body_parts val concat :body let
-  :scraped_page map
-    :link val :url :scraped_page set
-    :title val :title :scraped_page set
-    :body val :body :scraped_page set
-  :scrape_data :scraped_page val push
-] :links :link loop
-:scrape_data print
+go "https://news.example.com"
+set :all_links grablinks
+set :matched_links ( parselinks ( get :all_links ) /a[href=somepattern]/ )
+arr :scrape_data
+loop ( get :matched_links ) :link {
+  go ( get :link )
+  arr :body_parts
+  push :body_parts ( grabcss ".article-content" )
+  if ( has_element? "true.next_page" ) {
+    click ".next_page"
+    push :body_parts ( grabcss ".page-2-article-content" )
+  } { }
+  set :body ( join ( get :body_parts ) )
+  map :scraped_page
+  setmap :scraped_page :url ( get :link )
+  setmap :scraped_page :title ( grabcss "h1" )
+  setmap :scraped_page :body ( get :body )
+  push :scrape_data ( get :scraped_page )
+}
+json ( get :scrape_data )
