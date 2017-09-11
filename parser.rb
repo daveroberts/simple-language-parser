@@ -38,6 +38,8 @@ end
 class NullPointer < Exception; end
 class InvalidParameter < Exception; end
 class UnknownCommand < Exception; end
+class InfiniteLoop < Exception; end
+class MismatchedTag < Exception; end
 class Break < Exception; end
 class Return < Exception
   attr_reader :value
@@ -68,6 +70,7 @@ def pop(stack, variables)
     block = []
     count = 1
     loop do
+      raise InfiniteLoop, "`(` without corresponding `)`.  (Make sure you have spaces around parenthesis)" if stack.count == 0
       loop_cmd = stack.shift
       count = count + 1 if loop_cmd == '('
       count = count - 1 if loop_cmd == ')'
@@ -80,6 +83,7 @@ def pop(stack, variables)
     block = []
     count = 1
     loop do
+      raise InfiniteLoop, "`{` without corresponding `}`.  (Make sure you have spaces around curly braces)" if stack.count == 0
       loop_cmd = stack.shift
       count = count + 1 if loop_cmd == '{'
       count = count - 1 if loop_cmd == '}'
@@ -87,6 +91,10 @@ def pop(stack, variables)
       block.push loop_cmd
     end
     return [block]
+  elsif cmd == ')'
+    raise MismatchedTag, "`)` without earlier `(`.  (Make sure you have spaces around parenthesis)"
+  elsif cmd == '}'
+    raise MismatchedTag, "`}` without earlier `{`.  (Make sure you have spaces around curly braces)"
   elsif cmd == 'fun'
     sym = pop(stack, variables)[0]
     params = pop(stack, variables)[0]
@@ -128,7 +136,7 @@ def pop(stack, variables)
     raise InvalidParameter, "Invalid Parameter: `set` param #1, excepted symbol, found #{sym.class}" if sym.class != Symbol
     value = pop(stack, variables)[0]
     variables[sym] = value
-    return []
+    return [value]
   elsif cmd == '-'
     a = pop(stack, variables)[0]
     b = pop(stack, variables)[0]
@@ -147,27 +155,29 @@ def pop(stack, variables)
   elsif cmd == 'get'
     sym = pop(stack, variables)[0]
     return [variables[sym]]
-  elsif cmd == 'hashmap'
-    sym = pop(stack, variables)[0]
-    variables[sym] = {}
-    return []
+  elsif cmd == 'obj'
+    block = pop(stack, variables)[0]
+    obj = {}
+    loop do
+      break if block.count == 0
+      sym = pop(block, variables)[0]
+      val = pop(block, variables)[0]
+      obj[sym] = val
+    end
+    return [obj]
   elsif cmd == 'setmap'
     map = pop(stack, variables)[0]
+    raise InvalidParameter, "Invalid Parameter: `setmap` param #1, expected Symbol, found #{map.class}" if map.class != Symbol
     sym = pop(stack, variables)[0]
+    raise InvalidParameter, "Invalid Parameter: `setmap` param #2, expected Symbol, found #{sym.class}" if sym.class != Symbol
     val = pop(stack, variables)[0]
+    raise InvalidParameter, "Invalid Parameter: `setmap` param #3, expected value, found Symbol (#{val})" if val.class == Symbol
     variables[map][sym] = val
-    return []
-  elsif cmd == 'array'
-    sym = pop(stack, variables)[0]
-    variables[sym] = []
-    return []
+    return [variables[map]]
   elsif cmd == 'push'
     sym = pop(stack, variables)[0]
     val = pop(stack, variables)[0]
     variables[sym].push(val)
-    return []
-  elsif cmd == 'debug'
-    binding.pry
     return []
   elsif cmd == 'join'
     arr = pop(stack, variables)[0]
@@ -186,6 +196,18 @@ def pop(stack, variables)
       end
     end
     return []
+  elsif cmd == 'map'
+    collection = pop(stack, variables)[0]
+    sym = pop(stack, variables)[0]
+    block = pop(stack, variables)[0]
+    new_collection = []
+    locals = variables.dup
+    collection.each do |item|
+      locals[sym] = item
+      val = run_block(block.dup, locals).pop
+      new_collection.push(val)
+    end
+    return [new_collection]
   elsif cmd == 'loop'
     block = pop(stack, variables)[0]
     loop do
@@ -215,6 +237,9 @@ def pop(stack, variables)
   elsif cmd == 'json'
     val = pop(stack, variables)[0]
     return [val.to_json]
+  elsif cmd == 'debug'
+    binding.pry
+    return []
   elsif cmd == 'go'
     url = pop(stack, variables)[0]
     go(url)
@@ -240,6 +265,10 @@ def pop(stack, variables)
     sel = pop(stack, variables)[0]
     # call to type
     return []
+  elsif cmd == 'screenshot'
+    params = pop(stack)[0]
+    hsh = {}
+    return ["SCREENSHOT DATA HERE params(#{params})"]
   elsif cmd == 'submit'
     # call to submit
     return []

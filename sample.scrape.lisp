@@ -2,16 +2,17 @@
 go "https://news.example.com"
 set :all_links grablinks
 set :matched_links parselinks &all_links /a[href=somepattern]/
-array :scrape_data
+set :scrape_data ( )
 fun :scrape_page ( :link ) {
   go &link
-  hashmap :scraped_page
-  setmap :scraped_page :url &link
-  setmap :scraped_page :title grabcss "h1"
-  setmap :scraped_page :body grabcss ".article-content"
-  return &scraped_page
+  return obj {
+    :url        &link
+    :title      grabcss "h1"
+    :body       grabcss ".article-content"
+  }
 }
-for &matched_links :matched_link {
-  push :scrape_data call :scrape_page ( &matched_link )
-}
+;for &matched_links :matched_link {
+;  push :scrape_data call :scrape_page ( &matched_link )
+;}
+set :scrape_data map &matched_links :l { call :scrape_page ( :l ) }
 json &scrape_data

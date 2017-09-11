@@ -1,3 +1,4 @@
+# Sample scrape
 go "https://news.example.com"
 all_links = grablinks
 matched_links = parseLinks(all_links, /a[href=somepattern]/)
