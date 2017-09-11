@@ -6,15 +6,16 @@ file = File.read(script)
 program = file.split " "
 
 def go(url)
-  #puts "Navigating browser to #{url}"
+  puts "Navigating browser to #{url}"
 end
 
 def grablinks()
-  #puts "Grabbing links from current page"
+  puts "Grabbing links from current page"
   return ["link1","link2","link3","link4"]
 end
 
 def click(sel)
+  puts "clicked on #{sel}"
   # dummy click on selector
 end
 
@@ -31,11 +32,12 @@ end
 
 def grabcss(sel)
   #puts "grabbing #{sel} from page"
-  return "Content found in #{sel}"
+  return "Content from #{sel}"
 end
 
 def has_element?(sel)
-  return sel.start_with? "true"
+  #return sel.start_with? "true"
+  return [true,false].sample
 end
 
 @variables = {}
@@ -75,8 +77,24 @@ def pop(stack)
       block.push loop_cmd
     end
     return block
+  elsif cmd == '['
+    arr = []
+    count = 1
+    loop do
+      item = stack.shift
+      count = count + 1 if item == '['
+      count = count - 1 if item == ']'
+      break if count == 0
+      arr.push item
+    end
+    return arr
   elsif cmd.start_with? '"'
     return cmd[1..cmd.length-2]
+  elsif cmd.start_with? '&'
+    sym = cmd[1..cmd.length].to_sym
+    return @variables[sym]
+  elsif cmd.match /\d+/
+    return cmd.to_i
   elsif cmd.start_with? ":"
     return cmd[1..cmd.length].to_sym
   elsif cmd.start_with? "/"
@@ -85,6 +103,10 @@ def pop(stack)
     sym = pop(stack)
     value = pop(stack)
     @variables[sym] = value
+  elsif cmd == '+'
+    a = pop(stack)
+    b = pop(stack)
+    return a + b
   elsif cmd == 'get'
     sym = pop(stack)
     return @variables[sym]
@@ -106,7 +128,7 @@ def pop(stack)
   elsif cmd == 'join'
     arr = pop(stack)
     return arr.join
-  elsif cmd == 'loop'
+  elsif cmd == 'for'
     collection = pop(stack)
     sym = pop(stack)
     block = pop(stack)
@@ -114,6 +136,15 @@ def pop(stack)
       @variables[sym] = item
       run(block)
     end
+  elsif cmd == 'loop'
+    block = pop(stack)
+    loop do
+      val = run(block.dup)
+      break if val == 'BREAK'
+    end
+  elsif cmd == 'break'
+    stack.clear
+    return 'BREAK'
   elsif cmd == 'if'
     predicate = pop(stack)
     t_block = pop(stack)
@@ -129,8 +160,6 @@ def pop(stack)
   elsif cmd == 'grablinks'
     return grablinks()
   elsif cmd == 'grabcss'
-    sel = pop(stack)
-    return grabcss(sel)
   elsif cmd == 'parselinks'
     links = pop(stack)
     regex = pop(stack)

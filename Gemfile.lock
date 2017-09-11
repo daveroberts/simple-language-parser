@@ -10,10 +10,11 @@ GEM
     slop (3.6.0)
 
 PLATFORMS
+  ruby
   x64-mingw32
 
 DEPENDENCIES
   pry!
 
 BUNDLED WITH
-   1.15.1
+   1.15.3
