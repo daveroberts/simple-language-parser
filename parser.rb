@@ -104,6 +104,9 @@ def pop(stack)
     a = pop(stack)[0]
     b = pop(stack)[0]
     return [a + b]
+  elsif cmd == '!'
+    bool = pop(stack)[0]
+    return [!bool]
   elsif cmd == 'get'
     sym = pop(stack)[0]
     return [@variables[sym]]
@@ -189,6 +192,5 @@ def pop(stack)
   end
 end
 
-binding.pry
 json = run(program)[0]
 pp JSON.parse(json)

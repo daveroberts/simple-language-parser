@@ -9,11 +9,10 @@ for &matched_links :link {
   push :body_array grabcss ".article-content-page-1"
   set :page 1
   loop {
-    if has_element? ".next_page" {
-      click ".next_page"
-      set :page + 1 &page
-      push :body_array grabcss join ( ".article-content-page-" &page )
-    } { break }
+    if ! has_element? ".next_page" { break } { }
+    click ".next_page"
+    set :page + 1 &page
+    push :body_array grabcss join ( ".article-content-page-" &page )
   }
   set :body join &body_array
   hashmap :scraped_page
