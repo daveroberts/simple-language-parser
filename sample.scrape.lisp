@@ -5,7 +5,7 @@ set :matched_links parselinks &all_links /a[href=somepattern]/
 array :scrape_data
 for &matched_links :link {
   go &link
-  map :scraped_page
+  hashmap :scraped_page
   setmap :scraped_page :url &link
   setmap :scraped_page :title grabcss "h1"
   setmap :scraped_page :body grabcss ".article-content"
