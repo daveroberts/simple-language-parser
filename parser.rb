@@ -44,6 +44,7 @@ end
 @variables = {}
 
 class NullPointer < Exception; end
+class InvalidParameter < Exception; end
 class UnknownCommand < Exception; end
 class Break < Exception; end
 
@@ -97,6 +98,7 @@ def pop(stack)
     return [Regexp.new(cmd)]
   elsif cmd == 'set'
     sym = pop(stack)[0]
+    raise InvalidParameter, "Invalid Parameter: `set` param #1, excepted symbol, found #{sym.class}" if sym.class != Symbol
     value = pop(stack)[0]
     @variables[sym] = value
     return []
@@ -160,7 +162,9 @@ def pop(stack)
   elsif cmd == 'if'
     predicate = pop(stack)[0]
     t_block = pop(stack)[0]
+    raise InvalidParameter, "Invalid Parameter: `if` param #2, excepted Block, found #{t_block.class}" if t_block.class != Array
     f_block = pop(stack)[0]
+    raise InvalidParameter, "Invalid Parameter: `if` param #3, excepted Block, found #{f_block.class}" if f_block.class != Array
     run(t_block) if predicate
     run(f_block) if !predicate
     return []
@@ -186,6 +190,14 @@ def pop(stack)
   elsif cmd == 'click'
     sel = pop(stack)[0]
     click(sel)
+    return []
+  elsif cmd == 'type'
+    info = pop(stack)[0]
+    sel = pop(stack)[0]
+    # call to type
+    return []
+  elsif cmd == 'submit'
+    # call to submit
     return []
   else
     raise UnknownCommand, "Unknown command: #{cmd}"
