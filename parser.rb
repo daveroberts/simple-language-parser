@@ -47,6 +47,12 @@ class NullPointer < Exception; end
 class InvalidParameter < Exception; end
 class UnknownCommand < Exception; end
 class Break < Exception; end
+class Return < Exception
+  attr_reader :value
+  def initialize(v)
+    @value = v
+  end
+end
 
 def run(program)
   stack = program.dup
@@ -97,8 +103,15 @@ def pop(stack)
     params.each_with_index do |p,i|
       @variables[p] = param_values[i]
     end
-    values = run(block)
+    begin
+      values = run(block)
+    rescue Return => ret
+      return [ret.value]
+    end
     return [values.pop]
+  elsif cmd == 'return'
+    value = pop(stack)[0]
+    raise Return.new(value)
   elsif cmd.start_with? '"'
     return [cmd[1..cmd.length-2]]
   elsif cmd.start_with? '&'
@@ -117,10 +130,18 @@ def pop(stack)
     value = pop(stack)[0]
     @variables[sym] = value
     return []
+  elsif cmd == '-'
+    a = pop(stack)[0]
+    b = pop(stack)[0]
+    return [a - b]
   elsif cmd == '+'
     a = pop(stack)[0]
     b = pop(stack)[0]
     return [a + b]
+  elsif cmd == '='
+    a = pop(stack)[0]
+    b = pop(stack)[0]
+    return [a == b]
   elsif cmd == '!'
     bool = pop(stack)[0]
     return [!bool]
@@ -176,6 +197,7 @@ def pop(stack)
     raise Break
   elsif cmd == 'if'
     predicate = pop(stack)[0]
+    raise InvalidParameter, "Invalid Parameter: `if` param #1, excepted true or false, found #{predicate.class}" if predicate.class != TrueClass && predicate.class != FalseClass
     t_block = pop(stack)[0]
     raise InvalidParameter, "Invalid Parameter: `if` param #2, excepted Block, found #{t_block.class}" if t_block.class != Array
     f_block = pop(stack)[0]
@@ -224,4 +246,5 @@ def pop(stack)
 end
 
 json = run(program)[0]
+binding.pry
 pp JSON.parse(json)
