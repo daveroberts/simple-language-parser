@@ -48,10 +48,20 @@ class Return < Exception
   end
 end
 
-def run(script)
+def interactive
+  variables = {}
+  loop do
+    print ">> "
+    line = gets
+    output = run(line, variables)
+    puts output
+  end
+end
+
+def run(script, variables = {})
   script = script.split("\n").select{|l|!l.start_with?';'}.join(" ")
   program = script.split " "
-  run_block(program, {})
+  run_block(program, variables)
 end
 
 def run_block(program, variables)
@@ -175,9 +185,9 @@ def pop(stack, variables)
     variables[map][sym] = val
     return [variables[map]]
   elsif cmd == 'push'
-    sym = pop(stack, variables)[0]
+    collection = pop(stack, variables)[0]
     val = pop(stack, variables)[0]
-    variables[sym].push(val)
+    collection.push(val)
     return []
   elsif cmd == 'join'
     arr = pop(stack, variables)[0]
@@ -193,8 +203,6 @@ def pop(stack, variables)
         val = run_block(block.dup, locals)
       rescue Break
         break
-      rescue Return
-        xyzzy
       end
     end
     return []

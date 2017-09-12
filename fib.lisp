@@ -1,7 +1,7 @@
 ; Recursion for fun
 fun :fib ( :n ) {
-  if = &n 1 { return 0 } {
-    if = &n 2 { return 1 } {
+  if = &n 0 { return 0 } {
+    if = &n 1 { return 1 } {
       return +
         call :fib ( - &n 1 )
         call :fib ( - &n 2 )
@@ -9,4 +9,9 @@ fun :fib ( :n ) {
   }
 }
 
-call :fib ( 10 )
+set :counter 1
+loop {
+  print join ( &counter ":" call :fib ( &counter ) )
+  if = &counter 10 { break } { }
+  set :counter + 1 &counter
+}
