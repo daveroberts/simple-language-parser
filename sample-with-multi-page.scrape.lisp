@@ -2,23 +2,23 @@
 go "https://news.example.com"
 set :all_links grablinks
 set :matched_links parselinks &all_links /a[href=somepattern]/
-array :scrape_data
-for &matched_links :link {
+set :scrape_data ( )
+each &matched_links :link {
   go &link
-  array :body_array
-  push :body_array grabcss ".article-content-page-1"
+  set :body_array ( )
+  push &body_array grabcss ".article-content-page-1"
   set :page 1
   loop {
     if ! has_element? ".next_page" { break } { }
     click ".next_page"
     set :page + 1 &page
-    push :body_array grabcss join ( ".article-content-page-" &page )
+    push &body_array grabcss join ( ".article-content-page-" &page )
   }
   set :body join &body_array
-  hashmap :scraped_page
-  setmap :scraped_page :url &link
-  setmap :scraped_page :title grabcss "h1"
-  setmap :scraped_page :body &body
-  push :scrape_data &scraped_page
+  push &scrape_data obj {
+    :url &link
+    :title grabcss "h1"
+    :body &body
+  }
 }
 json &scrape_data
