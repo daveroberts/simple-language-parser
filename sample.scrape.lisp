@@ -9,10 +9,9 @@ fun :scrape_page ( :link ) {
   setmap :scraped_page :url &link
   setmap :scraped_page :title grabcss "h1"
   setmap :scraped_page :body grabcss ".article-content"
-  &scraped_page
+  return &scraped_page
 }
 for &matched_links :matched_link {
   push :scrape_data call :scrape_page ( &matched_link )
 }
-
 json &scrape_data
