@@ -53,8 +53,7 @@ def run(program)
   values = []
   loop do
     break if stack.length == 0
-    popped = pop(stack)
-    values.concat popped
+    values.concat pop(stack)
   end
   return values
 end
@@ -84,13 +83,29 @@ def pop(stack)
       block.push loop_cmd
     end
     return [block]
+  elsif cmd == 'fun'
+    sym = pop(stack)[0]
+    params = pop(stack)[0]
+    block = pop(stack)[0]
+    @variables[sym] = { params: params, block: block }
+    return []
+  elsif cmd == 'call'
+    sym = pop(stack)[0]
+    param_values = pop(stack)[0]
+    params = @variables[sym][:params]
+    block = @variables[sym][:block]
+    params.each_with_index do |p,i|
+      @variables[p] = param_values[i]
+    end
+    values = run(block)
+    return [values.pop]
   elsif cmd.start_with? '"'
     return [cmd[1..cmd.length-2]]
   elsif cmd.start_with? '&'
     sym = cmd[1..cmd.length].to_sym
     raise NullPointer, "Null Pointer: #{sym}" if !@variables.has_key? sym
     return [@variables[sym]]
-  elsif cmd.match /\d+/
+  elsif cmd.match /^\d+$/
     return [cmd.to_i]
   elsif cmd.start_with? ":"
     return [cmd[1..cmd.length].to_sym]
@@ -167,6 +182,10 @@ def pop(stack)
     raise InvalidParameter, "Invalid Parameter: `if` param #3, excepted Block, found #{f_block.class}" if f_block.class != Array
     run(t_block) if predicate
     run(f_block) if !predicate
+    return []
+  elsif cmd == 'print'
+    val = pop(stack)[0]
+    puts val
     return []
   elsif cmd == 'json'
     val = pop(stack)[0]
