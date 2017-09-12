@@ -166,6 +166,9 @@ def pop(stack, variables)
     val = pop(stack, variables)[0]
     variables[sym].push(val)
     return []
+  elsif cmd == 'debug'
+    binding.pry
+    return []
   elsif cmd == 'join'
     arr = pop(stack, variables)[0]
     return [arr.join]
