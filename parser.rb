@@ -182,7 +182,7 @@ def pop(stack, variables)
   elsif cmd == 'join'
     arr = pop(stack, variables)[0]
     return [arr.join]
-  elsif cmd == 'for'
+  elsif cmd == 'each'
     collection = pop(stack, variables)[0]
     sym = pop(stack, variables)[0]
     block = pop(stack, variables)[0]
@@ -193,6 +193,8 @@ def pop(stack, variables)
         val = run_block(block.dup, locals)
       rescue Break
         break
+      rescue Return
+        xyzzy
       end
     end
     return []

@@ -6,9 +6,9 @@ scrape_data = []
 matched_links.each do |link|
   go link
   scraped_page = {
-    url: link,
+    url:   link,
     title: grabcss("h1"),
-    body: grabcss(".article-content")
+    body:  grabcss(".article-content")
   }
   scrape_data.push scraped_page
 end
