@@ -1,11 +1,5 @@
 require 'pry'
 require 'json'
-require 'pp'
-
-script = ARGV[0] || 'sample.scrape.lisp'
-file = File.read(script)
-file = file.split("\n").select{|l|!l.start_with?';'}.join(" ")
-program = file.split " "
 
 def go(url)
   #puts "Navigating browser to #{url}"
@@ -41,8 +35,6 @@ def has_element?(sel)
   return [true,false].sample
 end
 
-@variables = {}
-
 class NullPointer < Exception; end
 class InvalidParameter < Exception; end
 class UnknownCommand < Exception; end
@@ -54,17 +46,23 @@ class Return < Exception
   end
 end
 
-def run(program)
+def run(script)
+  script = script.split("\n").select{|l|!l.start_with?';'}.join(" ")
+  program = script.split " "
+  run_block(program, {})
+end
+
+def run_block(program, variables)
   stack = program.dup
   values = []
   loop do
     break if stack.length == 0
-    values.concat pop(stack)
+    values.concat pop(stack, variables)
   end
   return values
 end
 
-def pop(stack)
+def pop(stack, variables)
   cmd = stack.shift
   if cmd == '('
     block = []
@@ -76,7 +74,7 @@ def pop(stack)
       break if count == 0
       block.push loop_cmd
     end
-    block_val = run(block)
+    block_val = run_block(block, variables)
     return [block_val]
   elsif cmd == "{"
     block = []
@@ -90,34 +88,35 @@ def pop(stack)
     end
     return [block]
   elsif cmd == 'fun'
-    sym = pop(stack)[0]
-    params = pop(stack)[0]
-    block = pop(stack)[0]
-    @variables[sym] = { params: params, block: block }
+    sym = pop(stack, variables)[0]
+    params = pop(stack, variables)[0]
+    block = pop(stack, variables)[0]
+    variables[sym] = { params: params, block: block }
     return []
   elsif cmd == 'call'
-    sym = pop(stack)[0]
-    param_values = pop(stack)[0]
-    params = @variables[sym][:params]
-    block = @variables[sym][:block]
+    sym = pop(stack, variables)[0]
+    param_values = pop(stack, variables)[0]
+    params = variables[sym][:params]
+    block = variables[sym][:block]
+    locals = variables.dup
     params.each_with_index do |p,i|
-      @variables[p] = param_values[i]
+      locals[p] = param_values[i]
     end
     begin
-      values = run(block)
+      values = run_block(block, locals)
     rescue Return => ret
       return [ret.value]
     end
     return [values.pop]
   elsif cmd == 'return'
-    value = pop(stack)[0]
+    value = pop(stack, variables)[0]
     raise Return.new(value)
   elsif cmd.start_with? '"'
     return [cmd[1..cmd.length-2]]
   elsif cmd.start_with? '&'
     sym = cmd[1..cmd.length].to_sym
-    raise NullPointer, "Null Pointer: #{sym}" if !@variables.has_key? sym
-    return [@variables[sym]]
+    raise NullPointer, "Null Pointer: #{sym}" if !variables.has_key? sym
+    return [variables[sym]]
   elsif cmd.match /^\d+$/
     return [cmd.to_i]
   elsif cmd.start_with? ":"
@@ -125,69 +124,70 @@ def pop(stack)
   elsif cmd.start_with? "/"
     return [Regexp.new(cmd)]
   elsif cmd == 'set'
-    sym = pop(stack)[0]
+    sym = pop(stack, variables)[0]
     raise InvalidParameter, "Invalid Parameter: `set` param #1, excepted symbol, found #{sym.class}" if sym.class != Symbol
-    value = pop(stack)[0]
-    @variables[sym] = value
+    value = pop(stack, variables)[0]
+    variables[sym] = value
     return []
   elsif cmd == '-'
-    a = pop(stack)[0]
-    b = pop(stack)[0]
+    a = pop(stack, variables)[0]
+    b = pop(stack, variables)[0]
     return [a - b]
   elsif cmd == '+'
-    a = pop(stack)[0]
-    b = pop(stack)[0]
+    a = pop(stack, variables)[0]
+    b = pop(stack, variables)[0]
     return [a + b]
   elsif cmd == '='
-    a = pop(stack)[0]
-    b = pop(stack)[0]
+    a = pop(stack, variables)[0]
+    b = pop(stack, variables)[0]
     return [a == b]
   elsif cmd == '!'
-    bool = pop(stack)[0]
+    bool = pop(stack, variables)[0]
     return [!bool]
   elsif cmd == 'get'
-    sym = pop(stack)[0]
-    return [@variables[sym]]
+    sym = pop(stack, variables)[0]
+    return [variables[sym]]
   elsif cmd == 'hashmap'
-    sym = pop(stack)[0]
-    @variables[sym] = {}
+    sym = pop(stack, variables)[0]
+    variables[sym] = {}
     return []
   elsif cmd == 'setmap'
-    map = pop(stack)[0]
-    sym = pop(stack)[0]
-    val = pop(stack)[0]
-    @variables[map][sym] = val
+    map = pop(stack, variables)[0]
+    sym = pop(stack, variables)[0]
+    val = pop(stack, variables)[0]
+    variables[map][sym] = val
     return []
   elsif cmd == 'array'
-    sym = pop(stack)[0]
-    @variables[sym] = []
+    sym = pop(stack, variables)[0]
+    variables[sym] = []
     return []
   elsif cmd == 'push'
-    sym = pop(stack)[0]
-    val = pop(stack)[0]
-    @variables[sym].push(val)
+    sym = pop(stack, variables)[0]
+    val = pop(stack, variables)[0]
+    variables[sym].push(val)
     return []
   elsif cmd == 'join'
-    arr = pop(stack)[0]
+    arr = pop(stack, variables)[0]
     return [arr.join]
   elsif cmd == 'for'
-    collection = pop(stack)[0]
-    sym = pop(stack)[0]
-    block = pop(stack)[0]
+    collection = pop(stack, variables)[0]
+    sym = pop(stack, variables)[0]
+    block = pop(stack, variables)[0]
+    locals = variables.dup
     collection.each do |item|
-      @variables[sym] = item
+      locals[sym] = item
       begin
-        val = run(block.dup)
+        val = run_block(block.dup, locals)
       rescue Break
         break
       end
     end
     return []
   elsif cmd == 'loop'
-    block = pop(stack)[0]
+    block = pop(stack, variables)[0]
     loop do
       begin
-        values = run(block.dup)
+        values = run_block(block.dup, variables)
       rescue Break
         break
       end
@@ -196,45 +196,45 @@ def pop(stack)
   elsif cmd == 'break'
     raise Break
   elsif cmd == 'if'
-    predicate = pop(stack)[0]
+    predicate = pop(stack, variables)[0]
     raise InvalidParameter, "Invalid Parameter: `if` param #1, excepted true or false, found #{predicate.class}" if predicate.class != TrueClass && predicate.class != FalseClass
-    t_block = pop(stack)[0]
+    t_block = pop(stack, variables)[0]
     raise InvalidParameter, "Invalid Parameter: `if` param #2, excepted Block, found #{t_block.class}" if t_block.class != Array
-    f_block = pop(stack)[0]
+    f_block = pop(stack, variables)[0]
     raise InvalidParameter, "Invalid Parameter: `if` param #3, excepted Block, found #{f_block.class}" if f_block.class != Array
-    run(t_block) if predicate
-    run(f_block) if !predicate
+    run_block(t_block, variables) if predicate
+    run_block(f_block, variables) if !predicate
     return []
   elsif cmd == 'print'
-    val = pop(stack)[0]
+    val = pop(stack, variables)[0]
     puts val
     return []
   elsif cmd == 'json'
-    val = pop(stack)[0]
+    val = pop(stack, variables)[0]
     return [val.to_json]
   elsif cmd == 'go'
-    url = pop(stack)[0]
+    url = pop(stack, variables)[0]
     go(url)
     return []
   elsif cmd == 'grablinks'
     return [grablinks]
   elsif cmd == 'grabcss'
-    sel = pop(stack)[0]
+    sel = pop(stack, variables)[0]
     return [grabcss(sel)]
   elsif cmd == 'parselinks'
-    links = pop(stack)[0]
-    regex = pop(stack)[0]
+    links = pop(stack, variables)[0]
+    regex = pop(stack, variables)[0]
     return [parselinks(links, regex)]
   elsif cmd == 'has_element?'
-    sel = pop(stack)[0]
+    sel = pop(stack, variables)[0]
     return [has_element?(sel)]
   elsif cmd == 'click'
-    sel = pop(stack)[0]
+    sel = pop(stack, variables)[0]
     click(sel)
     return []
   elsif cmd == 'type'
-    info = pop(stack)[0]
-    sel = pop(stack)[0]
+    info = pop(stack, variables)[0]
+    sel = pop(stack, variables)[0]
     # call to type
     return []
   elsif cmd == 'submit'
@@ -244,7 +244,3 @@ def pop(stack)
     raise UnknownCommand, "Unknown command: #{cmd}"
   end
 end
-
-json = run(program)[0]
-binding.pry
-pp JSON.parse(json)
