@@ -1,4 +1,0 @@
-"https://news.example.com" go
-grablinks :links let
-/a[href=somepattern]/ :links parselinks :links let
-:links print

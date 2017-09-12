@@ -206,6 +206,9 @@ def pop(stack, variables)
       end
     end
     return []
+  elsif cmd == 'first'
+    collection = pop(stack, variables)[0]
+    return [collection.first]
   elsif cmd == 'map'
     collection = pop(stack, variables)[0]
     sym = pop(stack, variables)[0]
