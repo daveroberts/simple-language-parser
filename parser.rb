@@ -138,6 +138,8 @@ def pop(stack, variables)
     return [cmd.to_i]
   elsif cmd.start_with? ":"
     return [cmd[1..cmd.length].to_sym]
+  elsif cmd.start_with? '&'
+    return [variables[cmd[1..cmd.length].to_sym]]
   elsif cmd == 'true'
     return [true]
   elsif cmd == 'false'
@@ -145,10 +147,9 @@ def pop(stack, variables)
   elsif cmd.start_with? "/"
     return [Regexp.new(cmd)]
   elsif cmd == 'set'
-    sym = pop(stack, variables)[0]
-    raise InvalidParameter, "Invalid Parameter: `set` param #1, excepted symbol, found #{sym.class}" if sym.class != Symbol
+    sym = stack.shift.to_sym
     value = popval(stack, variables)
-    variables[sym] = value
+    variables[sym] = value    
     return []
   elsif cmd == '-'
     a = popval(stack, variables)
@@ -201,13 +202,6 @@ def pop(stack, variables)
     return []
   elsif cmd == 'join'
     arr = popval(stack, variables)
-    arr = arr.map do |w|
-      if w.class == Symbol
-        variables[w]
-      else
-        w
-      end
-    end
     return [arr.join]
   elsif cmd == 'each'
     collection = popval(stack, variables)
@@ -300,23 +294,29 @@ def pop(stack, variables)
     # call to submit
     return []
   else
-    if variables.has_key? cmd.to_sym
-      if variables[cmd.to_sym].class == Hash && variables[cmd.to_sym][:fun]
-        fun = variables[cmd.to_sym]
-        locals = variables.dup
-        fun[:params].each do |p|
-          locals[p] = popval(stack, variables)
-        end
-        block = fun[:block]
-        values = nil
-        begin
-          values = run_block(block, locals)
-        rescue Return => ret
-          return [ret.value]
-        end
-        return [values.pop]
-      end
-    end
-    return [cmd.to_sym]
+    return [sym_to_val(cmd, stack, variables)]
   end
+end
+
+def sym_to_val(cmd, stack, variables)
+  if variables.has_key? cmd.to_sym
+    if variables[cmd.to_sym].class == Hash && variables[cmd.to_sym][:fun]
+      fun = variables[cmd.to_sym]
+      locals = variables.dup
+      fun[:params].each do |p|
+        locals[p] = popval(stack, variables)
+      end
+      block = fun[:block]
+      values = nil
+      begin
+        values = run_block(block, locals)
+      rescue Return => ret
+        return ret.value
+      end
+      return values.pop
+    else
+      return variables[cmd.to_sym]
+    end
+  end
+  return cmd.to_sym
 end

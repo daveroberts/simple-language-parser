@@ -10,3 +10,15 @@ fun find ( collection target ) {
 map ( "tiger" "bear" "kitty" ) animal {
   join ( animal " is" if find animals animal { " " } { " not " } "in the list" )
 }
+
+fun list ( collection announcement ) {
+  each collection item {
+    print announcement item
+  }
+}
+
+fun bark ( boobah ) {
+  join ( boobah " says woof" )
+}
+
+list animals &bark
