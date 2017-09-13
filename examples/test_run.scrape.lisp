@@ -1,5 +1,8 @@
 go "https://news.example.com"
-set links parselinks grablinks /a[href=somepattern]/
+set links parselinks obj {
+  :links grablinks
+  :regex /a[href=somepattern]/
+}
 set link first links
 go link
 json obj {

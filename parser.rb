@@ -124,31 +124,11 @@ def pop(stack, variables)
   elsif cmd == '}'
     raise MismatchedTag, "`}` without earlier `{`.  (Make sure you have spaces around curly braces)"
   elsif cmd == 'fun'
+    name = pop(stack, variables)[0]
     params = popval(stack, variables)
     block = popval(stack, variables)
-    return [{ params: params, block: block }]
-  elsif cmd == 'call'
-    fun = popval(stack, variables)
-    param_values = popval(stack, variables)
-    param_values = param_values.map do |p|
-      if p.class == Symbol
-        variables[p]
-      else
-        p
-      end
-    end
-    params = fun[:params]
-    block = fun[:block]
-    locals = variables.dup
-    params.each_with_index do |p,i|
-      locals[p] = param_values[i]
-    end
-    begin
-      values = run_block(block, locals)
-    rescue Return => ret
-      return [ret.value]
-    end
-    return [values.pop]
+    variables[name] = { fun: true, params: params, block: block }
+    return []
   elsif cmd == 'return'
     value = popval(stack, variables)
     raise Return.new(value)
@@ -158,6 +138,10 @@ def pop(stack, variables)
     return [cmd.to_i]
   elsif cmd.start_with? ":"
     return [cmd[1..cmd.length].to_sym]
+  elsif cmd == 'true'
+    return [true]
+  elsif cmd == 'false'
+    return [false]
   elsif cmd.start_with? "/"
     return [Regexp.new(cmd)]
   elsif cmd == 'set'
@@ -271,9 +255,9 @@ def pop(stack, variables)
     predicate = popval(stack, variables)
     t_block = popval(stack, variables)
     f_block = popval(stack, variables)
-    run_block(t_block, variables) if predicate
-    run_block(f_block, variables) if !predicate
-    return []
+    values = run_block(t_block, variables) if predicate
+    values = run_block(f_block, variables) if !predicate
+    return values
   elsif cmd == 'print'
     val = popval(stack, variables)
     puts val
@@ -316,7 +300,23 @@ def pop(stack, variables)
     # call to submit
     return []
   else
+    if variables.has_key? cmd.to_sym
+      if variables[cmd.to_sym].class == Hash && variables[cmd.to_sym][:fun]
+        fun = variables[cmd.to_sym]
+        locals = variables.dup
+        fun[:params].each do |p|
+          locals[p] = popval(stack, variables)
+        end
+        block = fun[:block]
+        values = nil
+        begin
+          values = run_block(block, locals)
+        rescue Return => ret
+          return [ret.value]
+        end
+        return [values.pop]
+      end
+    end
     return [cmd.to_sym]
-    #raise UnknownCommand, "Unknown command: #{cmd}"
   end
 end

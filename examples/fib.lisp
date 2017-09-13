@@ -1,17 +1,17 @@
 ; Recursion for fun
-set fib fun ( n ) {
-  if = n 0 { return 0 } {
-    if = n 1 { return 1 } {
-      return +
-        call fib ( - n 1 )
-        call fib ( - n 2 )
+fun fib ( n ) {
+  if = n 0 { 0 } {
+    if = n 1 { 1 } {
+      +
+        fib - n 1
+        fib - n 2
     }
   }
 }
 
 set counter 1
 loop {
-  print join ( counter ":" call fib ( counter ) )
+  print join ( counter ":" fib counter )
   if = counter 20 { break } { }
   set counter + 1 counter
 }
