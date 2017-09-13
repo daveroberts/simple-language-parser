@@ -8,6 +8,14 @@ Why
 ---
 To allow scripting in your application without loading code directly and without using `eval`
 
+How to run
+----------
+
+[source,console]
+----
+$ ./run examples/sample.lisp
+----
+
 Background
 ----------
 I studied computer scienced in college for six years.  I took a few courses in compilers and languages too.  Despite having great professors, none of it stuck.  This parser was created largely by trial and error.
