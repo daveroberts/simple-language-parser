@@ -3,34 +3,7 @@ Simple Language Parser
 Dave Roberts <dave.a.roberts@gmail.com>
 :source-highlighter: pygments
 
-Code to parse and run a custom scripting language
-
-Why
----
-To allow scripting in your application without loading code directly and without using `eval`
-
-How to run
-----------
-
-[source,console]
-----
-$ ./run examples/sample.lisp
-$ ./run examples/fib.lisp
-----
-
-Background
-----------
-I studied computer scienced in college for six years.  I took a few courses in compilers and languages.  Despite having great professors, I didn't remember much about how to write a compiler.  This parser was created largely by trial and error.
-
-I'm sure there are much better and more efficient ways to do this.
-
-Lisp files
-----------
-The example files have a .lisp extension so that github and vim syntax highlight some keywords in the files.
-
-but why‽
---------
-Let's say you have an ETL system that takes in data from multiple other systems.  The data from every system is formatted in a different way.  Every time you want to accept a new type of document, the ETL system needs to be updated in order to understand the new format.  Another option is to add code similar to this to your ETL system.  Your ETL can now accept both documents and a script for how to process the document.
+Code to parse and run a custom scripting language.  Allow scripting in your application without loading code directly and without using `eval`
 
 Example Code
 ------------
@@ -58,3 +31,28 @@ loop {
 }
 json family
 ----
+
+How to run
+----------
+
+You can use your own source files, or files from the `examples` directory
+
+[source,console]
+----
+$ ./run examples/sample.lisp
+$ ./run examples/fib.lisp
+----
+
+Background
+----------
+I studied computer scienced in college for six years.  I took a few courses in compilers and languages.  Despite having great professors, I didn't remember much about how to write a compiler.  This parser was created largely by trial and error.
+
+I'm sure there are much better and more efficient ways to do this.
+
+Lisp files
+----------
+The example files have a .lisp extension so that github and vim syntax highlight some keywords in the files.
+
+Why‽
+----
+Let's say you have an ETL system that takes in data from multiple other systems.  The data from every system is formatted in a different way.  Every time you want to accept a new type of document, the ETL system needs to be updated in order to understand the new format.  Another option is to add code similar to this to your ETL system.  Your ETL can now accept both documents and a script for how to process the document.
