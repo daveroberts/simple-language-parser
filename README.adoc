@@ -1,6 +1,7 @@
 Simple Language Parser
 ======================
 Dave Roberts <dave.a.roberts@gmail.com>
+:source-highlighter: pygments
 
 Ruby code which will parse a script file and execute the code inside.
 
