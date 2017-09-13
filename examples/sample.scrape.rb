@@ -1,7 +1,10 @@
 # Sample scrape in Ruby
 go "https://news.example.com"
 all_links = grablinks
-matched_links = parseLinks(all_links, /a[href=somepattern]/)
+matched_links = parseLinks({
+  links: all_links,
+  regex: /a[href=somepattern]/
+})
 
 scrape_data = []
 matched_links.each do |link|

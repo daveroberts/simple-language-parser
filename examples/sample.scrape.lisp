@@ -1,7 +1,10 @@
 ; Sample scrape
 go "https://news.example.com"
 set all_links grablinks
-set matched_links parselinks all_links /a[href=somepattern]/
+set matched_links parselinks obj {
+  :links all_links
+  :regex /a[href=somepattern]/
+}
 
 set scrape_data ( )
 each matched_links link {

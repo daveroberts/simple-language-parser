@@ -15,11 +15,10 @@ def click(sel)
   # dummy click on selector
 end
 
-def parselinks(links, regex)
-  #puts "parsing #{links.count} links with #{regex}"
+def parselinks(options)
   chosen_links = []
   chosen = true
-  links.each do |link|
+  options[:links].each do |link|
     chosen_links.push(link) if chosen
     chosen = !chosen
   end
@@ -295,9 +294,8 @@ def pop(stack, variables)
     sel = popval(stack, variables)
     return [grabcss(sel)]
   elsif cmd == 'parselinks'
-    links = popval(stack, variables)
-    regex = popval(stack, variables)
-    return [parselinks(links, regex)]
+    options = popval(stack, variables)
+    return [parselinks(options)]
   elsif cmd == 'has_element?'
     sel = popval(stack, variables)
     return [has_element?(sel)]
