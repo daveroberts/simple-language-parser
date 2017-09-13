@@ -45,7 +45,7 @@ $ ./run examples/fib.lisp
 
 Background
 ----------
-I studied computer scienced in college for six years.  I took a few courses in compilers and languages.  Despite having great professors, I didn't remember much about how to write a compiler.  This parser was created largely by trial and error.
+I studied computer science in college for six years.  I took a few courses in compilers and languages.  Despite having great professors, I didn't remember much about how to write a compiler.  This parser was created largely by trial and error.
 
 I'm sure there are much better and more efficient ways to do this.
 
