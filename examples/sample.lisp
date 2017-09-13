@@ -1,5 +1,17 @@
 ; Sample program that shows off syntax
 set animals ( "lion" "tiger" "bear" "dog" "cat" )
+
+fun twice ( f ) {
+  f f
+}
+
+fun add_three ( x ) { + 3 x }
+
+fun add_three_twice ( x ) { twice &add_three 6 }
+
+add_three_twice 2
+
+
 push animals "monkey"
 set family map ( "John" "Jacob" "Mary" "Maggie" ) name { obj { :firstname name } }
 each family person {
