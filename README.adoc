@@ -55,4 +55,10 @@ The example files have a .lisp extension so that github and vim syntax highlight
 
 Why‽
 ----
-Let's say you have a platform that processes data from multiple other systems.  The data from every system is formatted in a different way.  Every time you want to accept a new type of document, the platform needs to be updated in order to understand the new format.  Another option is to accept both the document, and a script for how to process the document.
+Because there are a few cases where a regular request / response API doesn't work well:
+
+1. The end user submits the script in advance, and you invoke it later when responding to an event.
+2. The end user doesn't have a system that can make the requests to the API and parse the output in order to make future calls.
+3. An API is static, but scripting allows emergent behavior and new use cases to be built onto simple commands
+
+**Example**: You have a platform that processes data from multiple other systems.  Each system formats their data differently.  To accept data from a new system, the platform would need to be updated in order to understand the new format.  Enabling support for scripting would allow you to accept documents and a script describing how to process the document, which would reduce the need to update your system.
