@@ -1,0 +1,19 @@
+Simple Language Parser
+======================
+Dave Roberts <dave.a.roberts@gmail.com>
+
+Ruby code which will parse a script file and execute the code inside.
+
+Why
+---
+To allow scripting in your application without loading code directly and without using `eval`
+
+Background
+----------
+I studied computer scienced in college for six years.  I took a few courses in compilers and languages too.  Despite having great professors, none of it stuck.  This parser was created largely by trial and error.
+
+I'm sure there are much better and more efficient ways to do this.
+
+Lisp files
+~~~~~~~~~~
+The example files have a .lisp extension so that github and vim syntax highlight the files.  It's not perfect, but it's better than nothing.

@@ -3,7 +3,7 @@ require 'pp'
 require 'json'
 require './parser.rb'
 
-filename = ARGV[0] || 'sample.scrape.lisp'
+filename = ARGV[0] || 'examples/sample.scrape.lisp'
 script = File.read(filename)
 values = run(script)
 
