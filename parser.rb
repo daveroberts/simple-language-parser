@@ -59,9 +59,23 @@ def interactive
 end
 
 def run(script, variables = {})
-  script = script.split("\n").select{|l|!l.start_with?';'}.join(" ")
-  program = script.split " "
+  program = tokenize script
   run_block(program, variables)
+end
+
+def tokenize(script)
+  script = script.split("\n").select{|l|!l.start_with?';'}.join(" ")
+  strings = script.scan(/\".*?[^\\]\"/)
+  script = script.gsub(/\".*?[^\\]\"/, "__STRING__")
+  program = script.split " "
+  i=0
+  while i < program.length do
+    if program[i] == "__STRING__"
+      program[i] = strings.shift
+    end
+    i = i + 1
+  end
+  return program
 end
 
 def run_block(program, variables, values=[])
@@ -71,6 +85,12 @@ def run_block(program, variables, values=[])
     values.concat pop(stack, variables)
   end
   return values
+end
+
+def popval(stack, variables)
+  value = pop(stack, variables)[0]
+  value = variables[value] if value.class == Symbol
+  return value
 end
 
 def pop(stack, variables)
@@ -105,14 +125,21 @@ def pop(stack, variables)
   elsif cmd == '}'
     raise MismatchedTag, "`}` without earlier `{`.  (Make sure you have spaces around curly braces)"
   elsif cmd == 'fun'
-    params = pop(stack, variables)[0]
-    block = pop(stack, variables)[0]
+    params = popval(stack, variables)
+    block = popval(stack, variables)
     return [{ params: params, block: block }]
   elsif cmd == 'call'
-    sym = pop(stack, variables)[0]
-    param_values = pop(stack, variables)[0]
-    params = variables[sym][:params]
-    block = variables[sym][:block]
+    fun = popval(stack, variables)
+    param_values = popval(stack, variables)
+    param_values = param_values.map do |p|
+      if p.class == Symbol
+        variables[p]
+      else
+        p
+      end
+    end
+    params = fun[:params]
+    block = fun[:block]
     locals = variables.dup
     params.each_with_index do |p,i|
       locals[p] = param_values[i]
@@ -124,14 +151,10 @@ def pop(stack, variables)
     end
     return [values.pop]
   elsif cmd == 'return'
-    value = pop(stack, variables)[0]
+    value = popval(stack, variables)
     raise Return.new(value)
   elsif cmd.start_with? '"'
     return [cmd[1..cmd.length-2]]
-  elsif cmd.start_with? '&'
-    sym = cmd[1..cmd.length].to_sym
-    raise NullPointer, "Null Pointer: #{sym}" if !variables.has_key? sym
-    return [variables[sym]]
   elsif cmd.match /^\d+$/
     return [cmd.to_i]
   elsif cmd.start_with? ":"
@@ -141,23 +164,23 @@ def pop(stack, variables)
   elsif cmd == 'set'
     sym = pop(stack, variables)[0]
     raise InvalidParameter, "Invalid Parameter: `set` param #1, excepted symbol, found #{sym.class}" if sym.class != Symbol
-    value = pop(stack, variables)[0]
+    value = popval(stack, variables)
     variables[sym] = value
     return []
   elsif cmd == '-'
-    a = pop(stack, variables)[0]
-    b = pop(stack, variables)[0]
+    a = popval(stack, variables)
+    b = popval(stack, variables)
     return [a - b]
   elsif cmd == '+'
-    a = pop(stack, variables)[0]
-    b = pop(stack, variables)[0]
+    a = popval(stack, variables)
+    b = popval(stack, variables)
     return [a + b]
   elsif cmd == '='
-    a = pop(stack, variables)[0]
-    b = pop(stack, variables)[0]
+    a = popval(stack, variables)
+    b = popval(stack, variables)
     return [a == b]
   elsif cmd == '!'
-    bool = pop(stack, variables)[0]
+    bool = popval(stack, variables)
     return [!bool]
   elsif cmd == 'get'
     sym = pop(stack, variables)[0]
@@ -168,44 +191,45 @@ def pop(stack, variables)
     loop do
       break if block.count == 0
       sym = pop(block, variables)[0]
-      val = pop(block, variables)[0]
+      val = popval(block, variables)
       obj[sym] = val
     end
     return [obj]
   elsif cmd == 'setprop'
-    obj = pop(stack, variables)[0]
-    raise InvalidParameter, "Invalid Parameter: `setprop` param #1, expected Object, found #{obj.class}" if obj.class != Hash
+    obj = popval(stack, variables)
     sym = pop(stack, variables)[0]
     raise InvalidParameter, "Invalid Parameter: `setprop` param #2, expected Symbol, found #{sym.class}" if sym.class != Symbol
-    val = pop(stack, variables)[0]
-    raise InvalidParameter, "Invalid Parameter: `setprop` param #3, expected value, found Symbol (#{val})" if val.class == Symbol
+    val = popval(stack, variables)
     obj[sym] = val
     return []
   elsif cmd == 'getprop'
-    obj = pop(stack, variables)[0]
-    raise InvalidParameter, "Invalid Parameter: `getprop` param #1, expected Object, found #{obj.class}" if obj.class != Hash
+    obj = popval(stack, variables)
     sym = pop(stack, variables)[0]
     raise InvalidParameter, "Invalid Parameter: `getprop` param #2, expected Symbol, found #{sym.class}" if sym.class != Symbol
     return [obj[sym]]
   elsif cmd == 'getitem'
-    arr = pop(stack, variables)[0]
-    raise InvalidParameter, "Invalid Parameter: `getitem` param #1, expected Array, found #{arr.class}" if arr.class != Array
-    index = pop(stack, variables)[0]
-    raise InvalidParameter, "Invalid Parameter: `getitem` param #2, expected Integer, found #{index.class}" if index.class != Integer
+    arr = popval(stack, variables)
+    index = popval(stack, variables)
     return [arr[index]]
   elsif cmd == 'push'
-    collection = pop(stack, variables)[0]
-    val = pop(stack, variables)[0]
+    collection = popval(stack, variables)
+    val = popval(stack, variables)
     collection.push(val)
     return []
   elsif cmd == 'join'
-    arr = pop(stack, variables)[0]
-    raise InvalidParameter, "Invalid Parameter: `join` param #1, expected Array, found #{sym.class}" if arr.class != Array
+    arr = popval(stack, variables)
+    arr = arr.map do |w|
+      if w.class == Symbol
+        variables[w]
+      else
+        w
+      end
+    end
     return [arr.join]
   elsif cmd == 'each'
-    collection = pop(stack, variables)[0]
+    collection = popval(stack, variables)
     sym = pop(stack, variables)[0]
-    block = pop(stack, variables)[0]
+    block = popval(stack, variables)
     locals = variables.dup
     collection.each do |item|
       locals[sym] = item
@@ -217,12 +241,12 @@ def pop(stack, variables)
     end
     return []
   elsif cmd == 'first'
-    collection = pop(stack, variables)[0]
+    collection = popval(stack, variables)
     return [collection.first]
   elsif cmd == 'map'
-    collection = pop(stack, variables)[0]
+    collection = popval(stack, variables)
     sym = pop(stack, variables)[0]
-    block = pop(stack, variables)[0]
+    block = popval(stack, variables)
     new_collection = []
     locals = variables.dup
     collection.each do |item|
@@ -232,7 +256,7 @@ def pop(stack, variables)
     end
     return [new_collection]
   elsif cmd == 'loop'
-    block = pop(stack, variables)[0]
+    block = popval(stack, variables)
     values = []
     loop do
       begin
@@ -245,58 +269,56 @@ def pop(stack, variables)
   elsif cmd == 'break'
     raise Break
   elsif cmd == 'if'
-    predicate = pop(stack, variables)[0]
-    raise InvalidParameter, "Invalid Parameter: `if` param #1, excepted true or false, found #{predicate.class}" if predicate.class != TrueClass && predicate.class != FalseClass
-    t_block = pop(stack, variables)[0]
-    raise InvalidParameter, "Invalid Parameter: `if` param #2, excepted Block, found #{t_block.class}" if t_block.class != Array
-    f_block = pop(stack, variables)[0]
-    raise InvalidParameter, "Invalid Parameter: `if` param #3, excepted Block, found #{f_block.class}" if f_block.class != Array
+    predicate = popval(stack, variables)
+    t_block = popval(stack, variables)
+    f_block = popval(stack, variables)
     run_block(t_block, variables) if predicate
     run_block(f_block, variables) if !predicate
     return []
   elsif cmd == 'print'
-    val = pop(stack, variables)[0]
+    val = popval(stack, variables)
     puts val
     return []
   elsif cmd == 'json'
-    val = pop(stack, variables)[0]
+    val = popval(stack, variables)
     return [val.to_json]
   elsif cmd == 'debug'
     binding.pry
     return []
   elsif cmd == 'go'
-    url = pop(stack, variables)[0]
+    url = popval(stack, variables)
     go(url)
     return []
   elsif cmd == 'grablinks'
     return [grablinks]
   elsif cmd == 'grabcss'
-    sel = pop(stack, variables)[0]
+    sel = popval(stack, variables)
     return [grabcss(sel)]
   elsif cmd == 'parselinks'
-    links = pop(stack, variables)[0]
-    regex = pop(stack, variables)[0]
+    links = popval(stack, variables)
+    regex = popval(stack, variables)
     return [parselinks(links, regex)]
   elsif cmd == 'has_element?'
-    sel = pop(stack, variables)[0]
+    sel = popval(stack, variables)
     return [has_element?(sel)]
   elsif cmd == 'click'
-    sel = pop(stack, variables)[0]
+    sel = popval(stack, variables)
     click(sel)
     return []
   elsif cmd == 'type'
-    info = pop(stack, variables)[0]
-    sel = pop(stack, variables)[0]
+    info = popval(stack, variables)
+    sel = popval(stack, variables)
     # call to type
     return []
   elsif cmd == 'screenshot'
-    params = pop(stack)[0]
+    params = popval(stack)
     hsh = {}
     return ["SCREENSHOT DATA HERE params(#{params})"]
   elsif cmd == 'submit'
     # call to submit
     return []
   else
-    raise UnknownCommand, "Unknown command: #{cmd}"
+    return [cmd.to_sym]
+    #raise UnknownCommand, "Unknown command: #{cmd}"
   end
 end

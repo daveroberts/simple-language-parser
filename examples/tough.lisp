@@ -1,1 +1,1 @@
-:one " Hello \" \"World\"" :two
+one " Hello \" \"World\"" two
