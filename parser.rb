@@ -35,6 +35,7 @@ def has_element?(sel)
 end
 
 class NullPointer < Exception; end
+class EmptyStack < Exception; end
 class InvalidParameter < Exception; end
 class UnknownCommand < Exception; end
 class InfiniteLoop < Exception; end
@@ -94,6 +95,7 @@ end
 
 def pop(stack, variables)
   cmd = stack.shift
+  raise EmptyStack, "Nothing on stack left to process" if cmd == nil
   if cmd == '('
     block = []
     count = 1
@@ -127,8 +129,9 @@ def pop(stack, variables)
     name = pop(stack, variables)[0]
     params = popval(stack, variables)
     block = popval(stack, variables)
-    variables[name] = { fun: true, params: params, block: block }
-    return []
+    fun = { fun: true, params: params, block: block }
+    variables[name] = fun
+    return [fun]
   elsif cmd == 'return'
     value = popval(stack, variables)
     raise Return.new(value)

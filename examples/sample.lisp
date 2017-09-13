@@ -2,15 +2,15 @@
 set animals ( "lion" "tiger" "bear" "dog" "cat" )
 
 fun twice ( f ) {
-  f f
+  fun g ( x ) { f f x }
 }
 
 fun add_three ( x ) { + 3 x }
 
 fun add_three_twice ( x ) { twice &add_three 6 }
 
-add_three_twice 2
-
+print add_three_twice 2
+print "Look up"
 
 push animals "monkey"
 set family map ( "John" "Jacob" "Mary" "Maggie" ) name { obj { :firstname name } }
