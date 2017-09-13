@@ -31,3 +31,30 @@ The example files have a .lisp extension so that github and vim syntax highlight
 but why‽
 --------
 Let's say you have an ETL system that takes in data from multiple other systems.  The data from every system is formatted in a different way.  Every time you want to accept a new type of document, the ETL system needs to be updated in order to understand the new format.  Another option is to add code similar to this to your ETL system.  Your ETL can now accept both documents and a script for how to process the document.
+
+Example Code
+------------
+
+See the `examples` directory for more
+
+[source,lisp]
+----
+; Sample program that shows off syntax
+set animals ( "lion" "tiger" "bear" "dog" "cat" )
+push animals "monkey"
+set family map ( "John" "Jacob" "Mary" "Maggie" ) name { obj { :firstname name } }
+each family person {
+  setprop person :lastname "Smith"
+}
+set pet fun ( person animal ) {
+  join ( getprop person :firstname " owns a " animal "!" )
+}
+call pet ( first family first animals )
+set counter 0
+loop {
+  set counter + 1 counter
+  getitem animals counter
+  if ! = counter 1 { break } { }
+}
+json family
+----
