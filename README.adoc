@@ -3,7 +3,7 @@ Simple Language Parser
 Dave Roberts <dave.a.roberts@gmail.com>
 :source-highlighter: pygments
 
-Code to parse and run a custom scripting language.  Allow scripting in your application without loading code directly and without using `eval`
+Allow users to write a simple scripting to invoke your API.  Safer than `eval`.
 
 Example Code
 ------------
@@ -55,4 +55,4 @@ The example files have a .lisp extension so that github and vim syntax highlight
 
 Why‽
 ----
-Let's say you have an ETL system that takes in data from multiple other systems.  The data from every system is formatted in a different way.  Every time you want to accept a new type of document, the ETL system needs to be updated in order to understand the new format.  Another option is to add code similar to this to your ETL system.  Your ETL can now accept both documents and a script for how to process the document.
+Let's say you have a platform that processes data from multiple other systems.  The data from every system is formatted in a different way.  Every time you want to accept a new type of document, the platform needs to be updated in order to understand the new format.  Another option is to accept both the document, and a script for how to process the document.
