@@ -64,9 +64,8 @@ def run(script, variables = {})
   run_block(program, variables)
 end
 
-def run_block(program, variables)
+def run_block(program, variables, values=[])
   stack = program.dup
-  values = []
   loop do
     break if stack.length == 0
     values.concat pop(stack, variables)
@@ -106,11 +105,9 @@ def pop(stack, variables)
   elsif cmd == '}'
     raise MismatchedTag, "`}` without earlier `{`.  (Make sure you have spaces around curly braces)"
   elsif cmd == 'fun'
-    sym = pop(stack, variables)[0]
     params = pop(stack, variables)[0]
     block = pop(stack, variables)[0]
-    variables[sym] = { params: params, block: block }
-    return []
+    return [{ params: params, block: block }]
   elsif cmd == 'call'
     sym = pop(stack, variables)[0]
     param_values = pop(stack, variables)[0]
@@ -146,7 +143,7 @@ def pop(stack, variables)
     raise InvalidParameter, "Invalid Parameter: `set` param #1, excepted symbol, found #{sym.class}" if sym.class != Symbol
     value = pop(stack, variables)[0]
     variables[sym] = value
-    return [value]
+    return []
   elsif cmd == '-'
     a = pop(stack, variables)[0]
     b = pop(stack, variables)[0]
@@ -175,15 +172,27 @@ def pop(stack, variables)
       obj[sym] = val
     end
     return [obj]
-  elsif cmd == 'setmap'
-    map = pop(stack, variables)[0]
-    raise InvalidParameter, "Invalid Parameter: `setmap` param #1, expected Symbol, found #{map.class}" if map.class != Symbol
+  elsif cmd == 'setprop'
+    obj = pop(stack, variables)[0]
+    raise InvalidParameter, "Invalid Parameter: `setprop` param #1, expected Object, found #{obj.class}" if obj.class != Hash
     sym = pop(stack, variables)[0]
-    raise InvalidParameter, "Invalid Parameter: `setmap` param #2, expected Symbol, found #{sym.class}" if sym.class != Symbol
+    raise InvalidParameter, "Invalid Parameter: `setprop` param #2, expected Symbol, found #{sym.class}" if sym.class != Symbol
     val = pop(stack, variables)[0]
-    raise InvalidParameter, "Invalid Parameter: `setmap` param #3, expected value, found Symbol (#{val})" if val.class == Symbol
-    variables[map][sym] = val
-    return [variables[map]]
+    raise InvalidParameter, "Invalid Parameter: `setprop` param #3, expected value, found Symbol (#{val})" if val.class == Symbol
+    obj[sym] = val
+    return []
+  elsif cmd == 'getprop'
+    obj = pop(stack, variables)[0]
+    raise InvalidParameter, "Invalid Parameter: `getprop` param #1, expected Object, found #{obj.class}" if obj.class != Hash
+    sym = pop(stack, variables)[0]
+    raise InvalidParameter, "Invalid Parameter: `getprop` param #2, expected Symbol, found #{sym.class}" if sym.class != Symbol
+    return [obj[sym]]
+  elsif cmd == 'getitem'
+    arr = pop(stack, variables)[0]
+    raise InvalidParameter, "Invalid Parameter: `getitem` param #1, expected Array, found #{arr.class}" if arr.class != Array
+    index = pop(stack, variables)[0]
+    raise InvalidParameter, "Invalid Parameter: `getitem` param #2, expected Integer, found #{index.class}" if index.class != Integer
+    return [arr[index]]
   elsif cmd == 'push'
     collection = pop(stack, variables)[0]
     val = pop(stack, variables)[0]
@@ -191,6 +200,7 @@ def pop(stack, variables)
     return []
   elsif cmd == 'join'
     arr = pop(stack, variables)[0]
+    raise InvalidParameter, "Invalid Parameter: `join` param #1, expected Array, found #{sym.class}" if arr.class != Array
     return [arr.join]
   elsif cmd == 'each'
     collection = pop(stack, variables)[0]
@@ -223,14 +233,15 @@ def pop(stack, variables)
     return [new_collection]
   elsif cmd == 'loop'
     block = pop(stack, variables)[0]
+    values = []
     loop do
       begin
-        values = run_block(block.dup, variables)
+        run_block(block.dup, variables, values)
       rescue Break
         break
       end
     end
-    return []
+    return [values]
   elsif cmd == 'break'
     raise Break
   elsif cmd == 'if'

@@ -15,6 +15,7 @@ How to run
 [source,console]
 ----
 $ ./run examples/sample.lisp
+$ ./run examples/fib.lisp
 ----
 
 Background
