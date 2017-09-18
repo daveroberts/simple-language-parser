@@ -1,9 +1,9 @@
 require 'pry'
 require 'pp'
 require 'json'
-require './parser.rb'
+require './newparser.rb'
 
-filename = ARGV[0] || 'examples/sample.lisp'
+filename = ARGV[0] || 'examples/newsample.js'
 script = File.read(filename)
 values = run(script)
 
