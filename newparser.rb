@@ -1,6 +1,7 @@
 require 'pry'
 require 'json'
 require './tokenizer.rb'
+require './tree_parser.rb'
 
 class NullPointer < Exception; end
 class EmptyStack < Exception; end
@@ -17,7 +18,8 @@ class Return < Exception
 end
 
 def run(script, variables = {})
-  program = tokenize(script)
+  tokens = tokenize(script)
+  program = parse_all(tokens)
   run_block(program, variables, [])
 end
 
@@ -40,37 +42,41 @@ def pop(stack, variables, values)
   token = stack.shift
   if token[:type] == :int
     return [token[:value].to_i]
-  elsif token[:type] == :word
-    # check if assignment
-    if stack[0] && stack[0][:type] == :equals
-      stack.shift # push off equals
-      value = popval(stack, variables, values)
-      variables[token[:value]] = value
-      return []
+  elsif token[:type] == :set
+    sym = stack.shift[:value]
+    value = popval(stack, variables, values)
+    binding.pry
+    if variables.has_key? sym
+      variables[sym] = value
+      binding.pry
     else
-      if variables.has_key? token[:value]
-        val = variables[token[:value]]
-        if val.class == Hash && val[:fun]
-          func = val
-          debug = func
-          result = func
-          while stack.count > 0 && stack[0][:type] == :left_paren
-            results = invoke(func, stack, variables, values)
-            result = results.pop
-            if result.class == Hash && result[:fun]
-              func = result
-            else
-              break
-            end
+      variables[sym] = value
+      binding.pry
+    end
+    return []
+  elsif token[:type] == :word
+    if variables.has_key? token[:value]
+      val = variables[token[:value]]
+      if val.class == Hash && val[:fun]
+        func = val
+        debug = func
+        result = func
+        while stack.count > 0 && stack[0][:type] == :left_paren
+          results = invoke(func, stack, variables, values)
+          result = results.pop
+          if result.class == Hash && result[:fun]
+            func = result
+          else
+            break
           end
-          binding.pry
-          return [result]
-        else
-          return [val]
         end
+        binding.pry
+        return [result]
       else
-        raise Exception, "#{token[:value]} undefined"
+        return [val]
       end
+    else
+      raise Exception, "#{token[:value]} undefined"
     end
   elsif token[:type] == :push
     stack.shift # left paren
@@ -130,9 +136,9 @@ def pop(stack, variables, values)
     puts item
     return []
   elsif token[:type] == :plus
-    val = popval(stack, variables, values)
-    add = values.pop
-    return [add + val]
+    val1 = popval(stack, variables, values)
+    val2 = popval(stack, variables, values)
+    return [val1 + val2]
   elsif token[:type] == :join
     collection = popval(stack, variables, values)
     return [collection.join()]
