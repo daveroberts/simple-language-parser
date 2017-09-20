@@ -1,16 +1,29 @@
+f = (a)->{
+  a+1
+}
+x=f(5)
+days = ['Monday','Tuesday','Wednesday']
+push(days, 'Thursday')
 foreach day in days {
   print(join(['Good morning ', day]))
 }
+map = (col, f)->{
+  arr=[]
+  foreach item in col {
+    push(arr, f(item))
+  }
+  arr
+}
 days = map(days, (d)->{{day: d}})
-days = ['Monday','Tuesday','Wednesday']
-x[:three] = 7
-x[1+1] = 7
-x[1+1] = x[1+1]
-x = {one: 2, three: 4}
+print(days)
+person = {first_name: "David"}
+person[:last_name] = "Smith"
+person[2+2] = "My four value"
+person[2+3] = person[2+2]
+print(person)
 while a==b {
   a + b
 }
-x=f(2)*f(7)+f(3)
 twice = (f)->{
   (x)->{
     f(f(x))

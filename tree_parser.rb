@@ -2,21 +2,21 @@ require 'pry'
 
 def parse_all(tokens)
   program = parse(tokens)
-  binding.pry
   return program
 end
 
 def parse(tokens)
+  tokens = parse_symbols(tokens) # must be before parse_index
+  tokens = parse_index(tokens) # must be before array
   tokens = parse_array(tokens)
   tokens = parse_functions(tokens)
-  tokens = parse_multiply(tokens)
+  tokens = parse_invoke(tokens) # must be before multipy
+  tokens = parse_set(tokens)
+  tokens = parse_variables(tokens) # must be after set
+  tokens = parse_multiply(tokens) # must be after variables
   tokens = parse_add(tokens)
   tokens = parse_double_equals(tokens)
   tokens = parse_hashmaps(tokens)
-  tokens = parse_index(tokens)
-  tokens = parse_invoke(tokens)
-  tokens = parse_variables(tokens)
-  tokens = parse_set(tokens)
   tokens = parse_while(tokens)
   tokens = parse_loop(tokens)
   tokens = parse_foreach(tokens)
@@ -24,7 +24,6 @@ def parse(tokens)
 end
 
 def parse_invoke(tokens)
-  orig_tokens = tokens.dup
   tokens = tokens.dup
   i = 0
   loop do
@@ -43,7 +42,6 @@ def parse_invoke(tokens)
     paren_count = 1
     current_argument = []
     loop do
-      binding.pry if tokens[i] == nil
       paren_count = paren_count - 1 if tokens[i][:type] == :right_paren
       paren_count = paren_count + 1 if tokens[i][:type] == :left_paren
       break if paren_count == 0
@@ -57,7 +55,7 @@ def parse_invoke(tokens)
     end
     tokens.delete_at(i)
     arguments.push(current_argument)
-    arguments = arguments.map{|a|parse(a)}
+    arguments = arguments.map{|a|parse(a)[0]}
     cmd = { type: :call, fun: fun, arguments: arguments }
     tokens.insert(i, cmd)
   end
@@ -247,8 +245,8 @@ def parse_index(tokens)
       tokens.delete_at(i)
     end
     tokens.delete_at(i) # right_bracket
-    block = parse(block)
-    cmd = { type: :index_of, symbol: symbol, block: block }
+    index = parse(block)[0]
+    cmd = { type: :index_of, symbol: symbol, index: index }
     tokens.insert(i, cmd)
   end
   return tokens
@@ -318,7 +316,7 @@ def parse_foreach(tokens)
   tokens = tokens.dup
   while(index = tokens.find_index{|t|t[:type]==:foreach}) do
     tokens.delete_at index # remove foreach
-    symbol = tokens[index]
+    symbol = tokens[index][:symbol]
     tokens.delete_at index # remove symbol
     tokens.delete_at index # remove in
     collection = []
@@ -338,7 +336,7 @@ def parse_foreach(tokens)
       tokens.delete_at index
     end
     tokens.delete_at index # right_curly
-    cmd = { type: :foreach_apply, collection: parse(collection), block: parse(block) }
+    cmd = { type: :foreach_apply, symbol: symbol, collection: parse(collection), block: parse(block) }
     tokens.insert(index, cmd)
   end
   return tokens
@@ -349,6 +347,26 @@ def parse_variables(tokens)
   tokens = tokens.map do |token|
     if token[:type] == :word
       { type: :get_value, symbol: token[:value] }
+    else
+      token
+    end
+  end
+  return tokens
+end
+
+def parse_symbols(tokens)
+  tokens = tokens.dup
+  tokens = tokens.map do |token|
+    if token[:type] == :symbol
+      if token[:value].class == Symbol
+        token
+      elsif token[:value].start_with? ':'
+        { type: :symbol, value: token[:value][1..-1].to_sym }
+      elsif token[:value].end_with? ':'
+        { type: :symbol, value: token[:value][0..-2].to_sym }
+      else
+        binding.pry # weird symbol
+      end
     else
       token
     end
