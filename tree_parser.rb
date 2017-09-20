@@ -11,12 +11,12 @@ def parse(tokens)
   tokens = parse_array(tokens)
   tokens = parse_functions(tokens)
   tokens = parse_invoke(tokens) # must be before multipy
-  tokens = parse_set(tokens)
-  tokens = parse_variables(tokens) # must be after set
+  tokens = parse_hashmaps(tokens) # must be before set
+  #tokens = parse_variables(tokens) # must be after set
   tokens = parse_multiply(tokens) # must be after variables
   tokens = parse_add(tokens)
   tokens = parse_double_equals(tokens)
-  tokens = parse_hashmaps(tokens)
+  tokens = parse_set(tokens) # must be after hashmaps
   tokens = parse_while(tokens)
   tokens = parse_loop(tokens)
   tokens = parse_foreach(tokens)
@@ -316,7 +316,7 @@ def parse_foreach(tokens)
   tokens = tokens.dup
   while(index = tokens.find_index{|t|t[:type]==:foreach}) do
     tokens.delete_at index # remove foreach
-    symbol = tokens[index][:symbol]
+    symbol = tokens[index][:value]
     tokens.delete_at index # remove symbol
     tokens.delete_at index # remove in
     collection = []

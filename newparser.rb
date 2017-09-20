@@ -38,7 +38,6 @@ def exec_cmd(command, variables)
       variables[command[:symbol][:value]] = exec_cmd(command[:value], variables)
       return nil
     elsif command[:symbol][:type] == :index_of
-      binding.pry
       variables[command[:symbol][:symbol]][exec_cmd(command[:symbol][:index], variables)] = exec_cmd(command[:value], variables)
     else
       binding.pry # set on something other than a word
@@ -66,9 +65,9 @@ def exec_cmd(command, variables)
     end
   elsif command[:type] == :int
     return command[:value].to_i
-  elsif command[:type] == :get_value
-    raise NullPointer, "#{command[:symbol]} does not exist" if !variables.has_key? command[:symbol]
-    return variables[command[:symbol]]
+  elsif command[:type] == :word #:get_value
+    raise NullPointer, "#{command[:value]} does not exist" if !variables.has_key? command[:value]
+    return variables[command[:value]]
   elsif command[:type] == :function
     return {
       type: :function,
@@ -84,15 +83,37 @@ def exec_cmd(command, variables)
       locals[symbol] = item
       run_block(block, locals)
     end
+  elsif command[:type] == :while_apply
+    condition = command[:condition]
+    block = command[:block]
+    while exec_cmd(condition,variables) do
+      run_block(block,variables)
+    end
+  elsif command[:type] == :loop_apply
+    block = command[:block]
+    loop do
+      begin
+        run_block(block, variables)
+      rescue Break
+        break
+      end
+    end
+  elsif command[:type] == :break
+    raise Break
   elsif command[:type] == :array
     arr = command[:items].map{|i|run_block(i,variables)}
     return arr
+  elsif command[:type] == :index_of
+    return variables[command[:symbol]][exec_cmd(command[:index], variables)]
   elsif command[:type] == :string
     return command[:value][1..-2]
+  elsif command[:type] == :check_equality
+    left = exec_cmd(command[:left], variables)
+    right = exec_cmd(command[:right], variables)
+    return left == right
   elsif command[:type] == :symbol
     return command[:value]
   elsif command[:type] == :hashmap
-    {:type=>:hashmap, :objects=>[{:symbol=>"day:", :block=>[{:type=>:get_value, :symbol=>"d"}]}]}
     obj = {}
     command[:objects].each do |o|
       obj[o[:symbol]] = run_block(o[:block], variables)
