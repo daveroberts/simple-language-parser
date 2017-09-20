@@ -12,14 +12,18 @@ def parse(tokens)
   tokens = parse_functions(tokens)
   tokens = parse_invoke(tokens) # must be before multipy
   tokens = parse_hashmaps(tokens) # must be before set
-  #tokens = parse_variables(tokens) # must be after set
+  #tokens = parse_variables(tokens) # was causing problems with a[x] = 5 # must be after set before multiply
   tokens = parse_multiply(tokens) # must be after variables
   tokens = parse_add(tokens)
+  tokens = parse_minus(tokens)
   tokens = parse_double_equals(tokens)
+  tokens = parse_not_equals(tokens)
   tokens = parse_set(tokens) # must be after hashmaps
+  tokens = parse_if(tokens)
   tokens = parse_while(tokens)
   tokens = parse_loop(tokens)
   tokens = parse_foreach(tokens)
+  tokens = parse_return(tokens)
   return tokens
 end
 
@@ -34,6 +38,7 @@ def parse_invoke(tokens)
     next if token[:type] != :word
     next if next_token[:type] != :left_paren
     # We have an invocation
+    orig_tokens = tokens.dup
     i = i - 1
     fun = token[:value]
     tokens.delete_at(i)
@@ -53,10 +58,35 @@ def parse_invoke(tokens)
       end
       tokens.delete_at(i)
     end
-    tokens.delete_at(i)
+    tokens.delete_at(i) # right paren
     arguments.push(current_argument)
     arguments = arguments.map{|a|parse(a)[0]}
     cmd = { type: :call, fun: fun, arguments: arguments }
+    # chaining methods
+    while tokens.count > 0 && tokens[i][:type] == :left_paren do
+      tokens.delete_at i # left paren
+      paren_count = 1
+      arguments = []
+      current_argument = []
+      loop do
+        paren_count = paren_count - 1 if tokens[i][:type] == :right_paren
+        paren_count = paren_count + 1 if tokens[i][:type] == :left_paren
+        if paren_count == 0
+          tokens.delete_at i # right paren
+          arguments.push(current_argument)
+          arguments = arguments.map{|a|parse(a)[0]}
+          cmd = { type: :call, fun: cmd, arguments: arguments }
+          break
+        end
+        if tokens[i][:type] == :comma && paren_count == 1
+          arguments.push(current_argument)
+          current_argument = []
+        else
+          current_argument.push(tokens[i])
+        end
+        tokens.delete_at(i)
+      end
+    end
     tokens.insert(i, cmd)
   end
   return tokens
@@ -125,6 +155,20 @@ def parse_add(tokens)
   return tokens
 end
 
+def parse_minus(tokens)
+  tokens = tokens.dup
+  while(index = tokens.find_index{|t|t[:type]==:minus}) do
+    left = tokens[index-1]
+    right = tokens[index+1]
+    cmd = { type: :minus_apply, left: left, right: right }
+    tokens.delete_at(index-1)
+    tokens.delete_at(index-1)
+    tokens.delete_at(index-1)
+    tokens.insert(index-1, cmd)
+  end
+  return tokens
+end
+
 def parse_set(tokens)
   tokens = tokens.dup
   while(index = tokens.find_index{|t|t[:type]==:equals}) do
@@ -168,6 +212,20 @@ def parse_double_equals(tokens)
     left = tokens[index-1]
     right = tokens[index+1]
     cmd = { type: :check_equality, left: left, right: right }
+    tokens.delete_at(index-1)
+    tokens.delete_at(index-1)
+    tokens.delete_at(index-1)
+    tokens.insert(index-1, cmd)
+  end
+  return tokens
+end
+
+def parse_not_equals(tokens)
+  tokens = tokens.dup
+  while(index = tokens.find_index{|t|t[:type]==:not_equals}) do
+    left = tokens[index-1]
+    right = tokens[index+1]
+    cmd = { type: :check_not_equality, left: left, right: right }
     tokens.delete_at(index-1)
     tokens.delete_at(index-1)
     tokens.delete_at(index-1)
@@ -370,6 +428,72 @@ def parse_symbols(tokens)
     else
       token
     end
+  end
+  return tokens
+end
+
+def parse_if(tokens)
+  tokens = tokens.dup
+  while(index = tokens.find_index{|t|t[:type]==:if}) do
+    tokens.delete_at index # remove if
+    first_if = { condition: tokens[index], block: [] }
+    tokens.delete_at index # remove condition
+    tokens.delete_at index # remove left curly
+    count = 1
+    loop do
+      count = count - 1 if tokens[index][:type] == :right_curly
+      count = count + 1 if tokens[index][:type] == :left_curly
+      break if count == 0
+      first_if[:block].push tokens[index]
+      tokens.delete_at index
+    end
+    first_if[:block] = parse(first_if[:block])
+    tokens.delete_at index # right_curly
+    true_conditions = [first_if]
+    while tokens.count > 0 && tokens[index][:type] == :elsif do
+      tokens.delete_at index # elsif
+      next_if = { condition: tokens[index], block: [] }
+      tokens.delete_at index # condition
+      tokens.delete_at index # left curly
+      count = 1
+      loop do
+        count = count - 1 if tokens[index][:type] == :right_curly
+        count = count + 1 if tokens[index][:type] == :left_curly
+        break if count == 0
+        next_if[:block].push tokens[index]
+        tokens.delete_at index
+      end
+      tokens.delete_at index # right_curly
+      next_if[:block] = parse(next_if[:block])
+      true_conditions.push next_if
+    end
+    false_block = []
+    if tokens.count > 0 && tokens[index][:type] == :else
+      count = 1
+      tokens.delete_at index # else
+      tokens.delete_at index # left paren
+      loop do
+        count = count - 1 if tokens[index][:type] == :right_curly
+        count = count + 1 if tokens[index][:type] == :left_curly
+        break if count == 0
+        false_block.push tokens[index]
+        tokens.delete_at index
+      end
+      tokens.delete_at index # right paren
+    end
+    cmd = { type: :if_apply, true_conditions: true_conditions, false_block: parse(false_block) }
+    tokens.insert(index, cmd)
+  end
+  return tokens
+end
+
+def parse_return(tokens)
+  tokens = tokens.dup
+  while(index = tokens.find_index{|t|t[:type]==:return}) do
+    tokens.delete_at(index) # return
+    cmd = { type: :return_apply, value: tokens[index] }
+    tokens.delete_at(index) # value
+    tokens.insert(index, cmd)
   end
   return tokens
 end

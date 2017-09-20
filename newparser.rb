@@ -46,6 +46,10 @@ def exec_cmd(command, variables)
     left = exec_cmd(command[:left], variables)
     right = exec_cmd(command[:right], variables)
     return left + right
+  elsif command[:type] == :minus_apply
+    left = exec_cmd(command[:left], variables)
+    right = exec_cmd(command[:right], variables)
+    return left - right
   elsif command[:type] == :mult_apply
     left = exec_cmd(command[:left], variables)
     right = exec_cmd(command[:right], variables)
@@ -55,12 +59,28 @@ def exec_cmd(command, variables)
     if is_system_command? fun_name
       return run_system_command(fun_name, command[:arguments], variables)
     else
-      raise NullPointer, "#{fun_name} does not exist" if !variables.has_key? fun_name
-      fun = variables[fun_name]
-      command[:arguments].each_with_index do |arg, i|
-        variables[fun[:params][i][:value]] = exec_cmd(arg, variables)
+      fun = nil
+      if fun_name.class == String
+        raise NullPointer, "#{fun_name} does not exist" if !variables.has_key? fun_name
+        fun = variables[fun_name]
+      else
+        fun = exec_cmd(fun_name, variables)
       end
-      output = run_block(fun[:block], variables)
+      locals = variables.dup
+      command[:arguments].each_with_index do |arg, i|
+        locals[fun[:params][i][:value]] = exec_cmd(arg, locals)
+      end
+      output = nil
+      #replacements = {}
+      #fun[:params].each_with_index do |p,i|
+      #  replacements[p[:value]] = exec_cmd(command[:arguments][i], locals)
+      #end
+      #swap_block = swap(block, replacements)
+      begin
+        output = run_block(fun[:block], locals)
+      rescue Return => ret
+        output = ret.value
+      end
       return output
     end
   elsif command[:type] == :int
@@ -89,6 +109,15 @@ def exec_cmd(command, variables)
     while exec_cmd(condition,variables) do
       run_block(block,variables)
     end
+  elsif command[:type] == :if_apply
+    command[:true_conditions].each do |cond|
+      predicate = exec_cmd(cond[:condition], variables)
+      if predicate
+        return run_block(cond[:block], variables)
+        break
+      end
+    end
+    return run_block(command[:false_block], variables)
   elsif command[:type] == :loop_apply
     block = command[:block]
     loop do
@@ -100,6 +129,12 @@ def exec_cmd(command, variables)
     end
   elsif command[:type] == :break
     raise Break
+  elsif command[:type] == :return_apply
+    raise Return.new(exec_cmd(command[:value], variables))
+  elsif command[:type] == :true
+    return true
+  elsif command[:type] == :false
+    return false
   elsif command[:type] == :array
     arr = command[:items].map{|i|run_block(i,variables)}
     return arr
@@ -111,6 +146,10 @@ def exec_cmd(command, variables)
     left = exec_cmd(command[:left], variables)
     right = exec_cmd(command[:right], variables)
     return left == right
+  elsif command[:type] == :check_not_equality
+    left = exec_cmd(command[:left], variables)
+    right = exec_cmd(command[:right], variables)
+    return left != right
   elsif command[:type] == :symbol
     return command[:value]
   elsif command[:type] == :hashmap

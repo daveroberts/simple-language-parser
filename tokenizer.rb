@@ -4,10 +4,11 @@ require 'pry'
 
 @token_definitions = [
   { type: :float, regex: /^[-+]?\d*\.\d+([eE][-+]?\d+)?/ },
-  { type: :int, regex: /^-?\d+/ },
+  { type: :int, regex: /^\d+/ },
   { type: :true, regex: /^true/ },
   { type: :false, regex: /^false/ },
   { type: :double_equals, regex: /^==/ },
+  { type: :not_equals, regex: /^!=/ },
   { type: :equals, regex: /^=/ },
   { type: :return, regex: /^return/ },
   { type: :if, regex: /^if/ },

@@ -1,3 +1,43 @@
+//twice = (f)->{
+//  (x)->{
+//    f(f(x))
+//  }
+//}
+//add_three = (x)->{3+x}
+//add_three_twice = (x)->{twice(add_three)(x)}
+//print("Should be 13")
+//print(add_three_twice(7))
+
+fib = (n)->{
+  if n == 0 {
+    0
+  } elsif n == 1 {
+    1
+  } else {
+    fib(n-1) + fib(n-2)
+  }
+}
+counter=0
+while counter != 21 {
+  print(join([counter,": ",fib(counter)]))
+  counter = counter + 1
+}
+
+f = (x)->{
+  return x + 1
+}
+
+print(f(2))
+
+
+if 4 == 2*2 {
+  print("Should print")
+} else {
+  print("Should not print")
+}
+
+if false {  }
+
 person = {first_name: "David"}
 print("Person:")
 print(person)
@@ -28,15 +68,6 @@ a = 10
 while a==b {
   a = 1
 }
-twice = (f)->{
-  (x)->{
-    f(f(x))
-  }
-}
-add_three = (x)->{3+x}
-//add_three_twice = (x)->{twice(add_three)(x)}
-print("Should be 13")
-//print(add_three_twice(7))
 (a,b,c)->{a+b+c}
 x=1
 x = 1 + x
@@ -51,22 +82,3 @@ push(days, 'Thursday')
 loop {
   break
 }
-
-go("https://news.example.com")
-all_links=grablinks()
-matched_links = parselinks({
-  links: all_links,
-  regex: /a[href=something]/
-})
-
-scrape_data = []
-foreach link in matched_links {
-  go(link)
-  push(scrape_data, {
-    url: link,
-    title: grabcss("h1"),
-    body: grabcss(".article-content")
-  })
-}
-
-json(scrape_data)
