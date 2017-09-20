@@ -38,7 +38,6 @@ def parse_invoke(tokens)
     next if token[:type] != :word
     next if next_token[:type] != :left_paren
     # We have an invocation
-    orig_tokens = tokens.dup
     i = i - 1
     fun = token[:value]
     tokens.delete_at(i)
@@ -59,11 +58,11 @@ def parse_invoke(tokens)
       tokens.delete_at(i)
     end
     tokens.delete_at(i) # right paren
-    arguments.push(current_argument)
+    arguments.push(current_argument) if current_argument.count > 0
     arguments = arguments.map{|a|parse(a)[0]}
     cmd = { type: :call, fun: fun, arguments: arguments }
     # chaining methods
-    while tokens.count > 0 && tokens[i][:type] == :left_paren do
+    while i < tokens.count && tokens[i][:type] == :left_paren do
       tokens.delete_at i # left paren
       paren_count = 1
       arguments = []
@@ -95,16 +94,21 @@ end
 def parse_functions(tokens)
   tokens = tokens.dup
   while(index = tokens.find_index{|t|t[:type]==:arrow}) do
+    orig_tokens = tokens.dup
+    orig_index = index
     params = []
     offset = 1
     tokens.delete_at(index-offset) # right paren
+    offset = offset + 1
     loop do
-      offset = offset + 1
-      params.unshift tokens[index-offset]
-      tokens.delete_at(index-offset)
-      offset = offset + 1
       break if tokens[index-offset][:type] == :left_paren
-      tokens.delete_at(index-offset)
+      params.unshift tokens[index-offset]
+      tokens.delete_at(index-offset) #param
+      offset = offset + 1
+      if tokens[index-offset][:type] == :comma
+        tokens.delete_at(index-offset)
+        offset = offset + 1
+      end
     end
     tokens.delete_at(index-offset) # delete left paren
     index = index-offset

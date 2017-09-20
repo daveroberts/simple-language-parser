@@ -1,12 +1,19 @@
-//twice = (f)->{
-//  (x)->{
-//    f(f(x))
-//  }
-//}
-//add_three = (x)->{3+x}
-//add_three_twice = (x)->{twice(add_three)(x)}
-//print("Should be 13")
-//print(add_three_twice(7))
+say_hello = ()->{ print("Guten Tag") }
+twice = (f)->{
+  (x)->{
+    f(f(x))
+  }
+}
+add_three = (x)->{3+x}
+add_three_twice = (x)->{twice(add_three)(x)}
+print("Should be 13")
+print(add_three_twice(7))
+say_hello = (name)->{ print(join(["Guten Tag ",name])) }
+again = (f)->{(x)->{f(x) f(x)}}
+double_hello = again(say_hello)
+double_hello("Joe")
+//double_hello = (name)->twice(say_hello)(name)
+//double_hello("Joe")
 
 fib = (n)->{
   if n == 0 {

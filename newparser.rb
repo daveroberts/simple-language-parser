@@ -71,11 +71,7 @@ def exec_cmd(command, variables)
         locals[fun[:params][i][:value]] = exec_cmd(arg, locals)
       end
       output = nil
-      #replacements = {}
-      #fun[:params].each_with_index do |p,i|
-      #  replacements[p[:value]] = exec_cmd(command[:arguments][i], locals)
-      #end
-      #swap_block = swap(block, replacements)
+      locals = fun[:locals].merge(locals)
       begin
         output = run_block(fun[:block], locals)
       rescue Return => ret
@@ -92,7 +88,8 @@ def exec_cmd(command, variables)
     return {
       type: :function,
       params: command[:params],
-      block: command[:block]
+      block: command[:block],
+      locals: variables.dup
     }
   elsif command[:type] == :foreach_apply
     collection = run_block(command[:collection], variables)
