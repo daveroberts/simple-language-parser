@@ -51,3 +51,22 @@ push(days, 'Thursday')
 loop {
   break
 }
+
+go("https://news.example.com")
+all_links=grablinks()
+matched_links = parselinks({
+  links: all_links,
+  regex: /a[href=something]/
+})
+
+scrape_data = []
+foreach link in matched_links {
+  go(link)
+  push(scrape_data, {
+    url: link,
+    title: grabcss("h1"),
+    body: grabcss(".article-content")
+  })
+}
+
+json(scrape_data)
