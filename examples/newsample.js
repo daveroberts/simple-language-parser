@@ -60,3 +60,19 @@ foreach person in people {
 
 //pi = 3.14
 
+animals = ["lion","tiger","bear","dog","cat"]
+push(animals, "monkey")
+family = map(["John","Jacob","Mary","Maggie"], (name)->{ {first_name: name} })
+foreach person in family {
+  person[:last_name] = "Smith"
+}
+pet = (person, animal)->{
+  print(join([person[:first_name]," owns a ",animal]))
+}
+pet(family[0], animals[0])
+counter = 0
+loop {
+  counter = counter + 1
+  print(join([animals[counter]," is my favorite animal"]))
+  if counter > 3 { break }
+}
