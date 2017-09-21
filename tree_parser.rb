@@ -16,6 +16,7 @@ def parse(tokens)
   tokens = parse_multiply(tokens) # must be after variables
   tokens = parse_add(tokens)
   tokens = parse_minus(tokens)
+  tokens = parse_less_greater_than(tokens)
   tokens = parse_double_equals(tokens)
   tokens = parse_not_equals(tokens)
   tokens = parse_set(tokens) # must be after hashmaps
@@ -224,6 +225,47 @@ def parse_double_equals(tokens)
   return tokens
 end
 
+def parse_less_greater_than(tokens)
+  tokens = tokens.dup
+  while(index = tokens.find_index{|t|t[:type]==:less_than_or_equals}) do
+    left = tokens[index-1]
+    right = tokens[index+1]
+    cmd = { type: :check_less_than_or_equals, left: left, right: right }
+    tokens.delete_at(index-1)
+    tokens.delete_at(index-1)
+    tokens.delete_at(index-1)
+    tokens.insert(index-1, cmd)
+  end
+  while(index = tokens.find_index{|t|t[:type]==:greater_than_or_equals}) do
+    left = tokens[index-1]
+    right = tokens[index+1]
+    cmd = { type: :check_greater_than_or_equals, left: left, right: right }
+    tokens.delete_at(index-1)
+    tokens.delete_at(index-1)
+    tokens.delete_at(index-1)
+    tokens.insert(index-1, cmd)
+  end
+  while(index = tokens.find_index{|t|t[:type]==:less_than}) do
+    left = tokens[index-1]
+    right = tokens[index+1]
+    cmd = { type: :check_less_than, left: left, right: right }
+    tokens.delete_at(index-1)
+    tokens.delete_at(index-1)
+    tokens.delete_at(index-1)
+    tokens.insert(index-1, cmd)
+  end
+  while(index = tokens.find_index{|t|t[:type]==:greater_than}) do
+    left = tokens[index-1]
+    right = tokens[index+1]
+    cmd = { type: :check_greater_than, left: left, right: right }
+    tokens.delete_at(index-1)
+    tokens.delete_at(index-1)
+    tokens.delete_at(index-1)
+    tokens.insert(index-1, cmd)
+  end
+  return tokens
+end
+
 def parse_not_equals(tokens)
   tokens = tokens.dup
   while(index = tokens.find_index{|t|t[:type]==:not_equals}) do
@@ -324,6 +366,9 @@ def parse_array(tokens)
     next if token[:type] != :left_bracket
     next if i > 0 && tokens[i-1][:type] == :word # index not array
     # We have an array
+    orig_tokens = tokens.dup
+    orig_token = token
+    orig_i = i
     all_items = []
     i = i - 1
     tokens.delete_at(i) # left_bracket

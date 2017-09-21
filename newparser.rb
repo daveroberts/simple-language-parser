@@ -143,6 +143,22 @@ def exec_cmd(command, variables)
     left = exec_cmd(command[:left], variables)
     right = exec_cmd(command[:right], variables)
     return left == right
+  elsif command[:type] == :check_less_than_or_equals
+    left = exec_cmd(command[:left], variables)
+    right = exec_cmd(command[:right], variables)
+    return left <= right
+  elsif command[:type] == :check_greater_than_or_equals
+    left = exec_cmd(command[:left], variables)
+    right = exec_cmd(command[:right], variables)
+    return left >= right
+  elsif command[:type] == :check_less_than
+    left = exec_cmd(command[:left], variables)
+    right = exec_cmd(command[:right], variables)
+    return left < right
+  elsif command[:type] == :check_greater_than
+    left = exec_cmd(command[:left], variables)
+    right = exec_cmd(command[:right], variables)
+    return left > right
   elsif command[:type] == :check_not_equality
     left = exec_cmd(command[:left], variables)
     right = exec_cmd(command[:right], variables)

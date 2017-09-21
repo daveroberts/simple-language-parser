@@ -5,10 +5,4 @@ require './newparser.rb'
 
 filename = ARGV[0] || 'examples/newsample.js'
 script = File.read(filename)
-values = run(script)
-
-begin
-  pp JSON.parse(values)
-rescue
-  puts values
-end
+output = run(script)
