@@ -45,6 +45,12 @@ fourth_power = (x)->{twice(square)(x)}
 print(join(["Should be ",6*6*6*6,": ", fourth_power(6)]))
 // Should be 1296: 1296
 
+// Foreign function interface
+// You can register your own methods and use them in your script
+// See run.rb to see where `foreign_func` is defined
+print(join(["Foreign function returned: ",foreign_func(2,3)]))
+// Foreign function returned: 36
+
 // Recursive function definition
 // Fibonacci sequence
 fib = (n)->{
