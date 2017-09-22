@@ -1,13 +1,21 @@
 x=2
 y = x+2
 print(join(["x=",x," y=",y]))
-
+map = (col, f)->{
+  arr=[]
+  foreach item in col {
+    push(arr, f(item))
+  }
+  arr
+}
 square = (x)->{x*x}
 twice = (f)->{
   (x)->{
     f(f(x))
   }
 }
+squares = map([1,2,3,4,5],square)
+print(squares)
 fourth_power = (x)->{twice(square)(x)}
 x=2+1+1+2
 print(join(["Should be ",x*x*x*x,": ", fourth_power(x)]))
@@ -45,13 +53,6 @@ foreach day in days {
 }
 
 names = ["Alice","Bob","Eve"]
-map = (col, f)->{
-  arr=[]
-  foreach item in col {
-    push(arr, f(item))
-  }
-  arr
-}
 people = map(names, (name)->{ {first_name: name, job: 'Security Researcher'} })
 
 foreach person in people {
