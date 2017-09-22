@@ -23,9 +23,9 @@ module SimpleLanguage
       @external_commands = {}
     end
 
-    def register(name, namespace, function)
+    def register(name, instance, function)
       @external_commands[name] = {
-        namespace: namespace,
+        instance: instance,
         function: function
       }
     end
@@ -245,7 +245,7 @@ module SimpleLanguage
       args.each do |arg|
         arr.push(exec_cmd(arg, variables))
       end
-      return Object.const_get(@external_commands[fun][:namespace]).send(@external_commands[fun][:function], *arr)
+      return @external_commands[fun][:instance].send(@external_commands[fun][:function], *arr)
     end
   end
 end

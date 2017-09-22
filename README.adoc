@@ -123,7 +123,7 @@ You can use your own source files, or files from the `examples` directory
 
 [source,console]
 ----
-$ ./run examples/newsample.js
+$ ./run examples/sample.js
 ----
 
 Background
