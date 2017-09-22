@@ -10,26 +10,9 @@ Example Code
 
 See the `examples` directory for more
 
-[source,lisp]
+[source,javascript]
 ----
-; Sample program that shows off syntax
-set animals ( "lion" "tiger" "bear" "dog" "cat" )
-push animals "monkey"
-set family map ( "John" "Jacob" "Mary" "Maggie" ) name { obj { :firstname name } }
-each family person {
-  setprop person :lastname "Smith"
-}
-fun pet ( person animal ) {
-  join ( getprop person :firstname " owns a " animal "!" )
-}
-pet first family first animals
-set counter 0
-loop {
-  set counter + 1 counter
-  getitem animals counter
-  if ! = counter 1 { break } { }
-}
-json family
+include::examples/newsample.js[]
 ----
 
 How to run
@@ -39,8 +22,8 @@ You can use your own source files, or files from the `examples` directory
 
 [source,console]
 ----
-$ ./run examples/sample.lisp
-$ ./run examples/fib.lisp
+$ ./run examples/sample.js
+$ ./run examples/fib.js
 ----
 
 Background
@@ -48,10 +31,6 @@ Background
 I studied computer science in college for six years.  I took a few courses in compilers and languages.  Despite having great professors, I didn't remember much about how to write a compiler.  This parser was created largely by trial and error.
 
 I'm sure there are much better and more efficient ways to do this.
-
-Lisp files
-----------
-The example files have a .lisp extension so that github and vim syntax highlight some keywords in the files.
 
 Why‽
 ----
