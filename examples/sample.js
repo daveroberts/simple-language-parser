@@ -89,14 +89,14 @@ foreach day in days {
 counter = 0
 loop {
   counter = counter + 1
-  if counter > 10 { break }
+  if counter >= 10 { break }
 }
-print(join(["Counter: ",counter]))
-// Counter: 11
+print(join(["Counted up to ",counter]))
+// Counted up to 10
 
 // While loop
 while counter != 0 {
   counter = counter - 1
 }
-print(join(["Counter: ",counter]))
-// Counter: 0
+print(join(["Counted down to ",counter]))
+// Counted down to 0
