@@ -352,6 +352,23 @@ module SimpleLanguage
         tokens.delete_at(i) # right_bracket
         index = parse(block)[0]
         cmd = { type: :index_of, symbol: symbol, index: index }
+        # chaining indexes
+        while i < tokens.count && tokens[i][:type] == :left_bracket do
+          tokens.delete_at i # left bracket
+          bracket_count = 1
+          block = []
+          loop do
+            bracket_count = bracket_count - 1 if tokens[i][:type] == :right_bracket
+            bracket_count = bracket_count + 1 if tokens[i][:type] == :left_bracket
+            if bracket_count == 0
+              index = parse(block)[0]
+              cmd = { type: :index_of, obj_or_array: cmd, index: index }
+              break
+            end
+            block.push(tokens[i])
+            tokens.delete_at(i)
+          end
+        end
         tokens.insert(i, cmd)
       end
       return tokens

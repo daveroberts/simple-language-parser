@@ -151,7 +151,12 @@ module SimpleLanguage
         arr = command[:items].map{|i|run_block(i,variables)}
         return arr
       elsif command[:type] == :index_of
-        return variables[command[:symbol]][exec_cmd(command[:index], variables)]
+        if command.has_key? :symbol
+          return variables[command[:symbol]][exec_cmd(command[:index], variables)]
+        else
+          arr = exec_cmd(command[:obj_or_array], variables)
+          return arr[exec_cmd(command[:index], variables)]
+        end
       elsif command[:type] == :string
         return command[:value][1..-2]
       elsif command[:type] == :check_equality
@@ -193,7 +198,7 @@ module SimpleLanguage
     end
 
     def is_system_command?(fun)
-      system_cmds = ['print','join','push','map']
+      system_cmds = ['print','join','push','map','len']
       return system_cmds.include? fun
     end
 
@@ -203,6 +208,8 @@ module SimpleLanguage
         puts(run_block(args, variables))
       when "join"
         return run_block(args, variables).join
+      when "len"
+        return exec_cmd(args[0], variables).length
       when "map"
         collection = exec_cmd(args[0], variables)
         fun = nil
