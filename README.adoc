@@ -12,7 +12,6 @@ See the `examples` directory for more
 
 [source,javascript]
 ----
-// Simple hello world
 print("Hello World")
 // "Hello World"
 
@@ -118,8 +117,7 @@ You can use your own source files, or files from the `examples` directory
 
 [source,console]
 ----
-$ ./run examples/sample.js
-$ ./run examples/fib.js
+$ ./run examples/newsample.js
 ----
 
 Background
