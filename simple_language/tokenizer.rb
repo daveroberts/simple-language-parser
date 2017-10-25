@@ -8,6 +8,7 @@ module SimpleLanguage
     TOKEN_DEFS = [
       { type: :float, regex: /^[-+]?\d*\.\d+([eE][-+]?\d+)?/ },
       { type: :int, regex: /^\d+/ },
+      { type: :null, regex: /^null/ },
       { type: :true, regex: /^true/ },
       { type: :false, regex: /^false/ },
       { type: :double_equals, regex: /^==/ },

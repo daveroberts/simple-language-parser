@@ -143,6 +143,8 @@ module SimpleLanguage
         raise Break
       elsif command[:type] == :return_apply
         raise Return.new(exec_cmd(command[:value], variables))
+      elsif command[:type] == :null
+        return nil
       elsif command[:type] == :true
         return true
       elsif command[:type] == :false

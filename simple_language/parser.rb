@@ -13,8 +13,8 @@ module SimpleLanguage
       tokens = parse_index(tokens) # must be before array
       tokens = parse_array(tokens)
       tokens = parse_functions(tokens)
-      tokens = parse_invoke(tokens) # must be before multipy
-      tokens = parse_hashmaps(tokens) # must be before set
+      tokens = parse_hashmaps(tokens) # must be before set; must be before invoke
+      tokens = parse_invoke(tokens) # must be before multipy; must be after hashmaps
       #tokens = parse_variables(tokens) # was causing problems with a[x] = 5 # must be after set before multiply
       tokens = parse_multiply(tokens) # must be after variables
       tokens = parse_add(tokens)
@@ -517,7 +517,7 @@ module SimpleLanguage
         first_if[:block] = parse(first_if[:block])
         tokens.delete_at index # right_curly
         true_conditions = [first_if]
-        while tokens.count > 0 && tokens[index][:type] == :elsif do
+        while index < tokens.count - 1 && tokens[index][:type] == :elsif do
           tokens.delete_at index # elsif
           next_if = { condition: tokens[index], block: [] }
           tokens.delete_at index # condition
@@ -535,7 +535,7 @@ module SimpleLanguage
           true_conditions.push next_if
         end
         false_block = []
-        if tokens.count > 0 && tokens[index][:type] == :else
+        if index < tokens.count - 1 && tokens[index][:type] == :else
           count = 1
           tokens.delete_at index # else
           tokens.delete_at index # left paren
