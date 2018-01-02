@@ -1,85 +1,92 @@
-require 'pry'
-
 module SimpleLanguage
   class Tokenizer
-
-    COMMENTS = [/^\s*;/, /^\s*\/\//, /\s*^#/]
-
-    TOKEN_DEFS = [
-      { type: :float, regex: /^[-+]?\d*\.\d+([eE][-+]?\d+)?/ },
-      { type: :int, regex: /^\d+/ },
-      { type: :null, regex: /^null/ },
-      { type: :true, regex: /^true/ },
-      { type: :false, regex: /^false/ },
-      { type: :double_equals, regex: /^==/ },
-      { type: :not_equals, regex: /^!=/ },
-      { type: :equals, regex: /^=/ },
-      { type: :return, regex: /^return/ },
-      { type: :if, regex: /^if/ },
-      { type: :elsif, regex: /^elsif/ },
-      { type: :else, regex: /^else/ },
-      { type: :foreach, regex: /^foreach/ },
-      { type: :in, regex: /^in/ },
-      { type: :loop, regex: /^loop/ },
-      { type: :while, regex: /^while/ },
-      { type: :break, regex: /^break/ },
-      { type: :arrow, regex: /^\-\>/ },
-      { type: :less_than_or_equals, regex: /^\<=/ },
-      { type: :less_than, regex: /^\</ },
-      { type: :greater_than_or_equals, regex: /^\>=/ },
-      { type: :greater_than, regex: /^\>/ },
-      { type: :plus, regex: /^\+/ },
-      { type: :minus, regex: /^\-/ },
-      { type: :multiply, regex: /^\*/ },
-      { type: :divide, regex: /^\// },
-      { type: :doublepipe, regex: /^\|\|/ },
-      { type: :pipe, regex: /^\|/ },
-      { type: :doublepipe, regex: /^\|/ },
-      { type: :left_paren, regex: /^\(/ },
-      { type: :right_paren, regex: /^\)/ },
-      { type: :left_curly, regex: /^\{/ },
-      { type: :right_curly, regex: /^\}/ },
-      { type: :left_bracket, regex: /^\[/ },
-      { type: :right_bracket, regex: /^\]/ },
-      { type: :comma, regex: /^\,/ },
-      { type: :whitespace, regex: /^\s/ },
-      { type: :symbol, regex: /^[A-Za-z_]+:/ },
-      { type: :symbol, regex: /^:[A-Za-z_]+/ },
-      { type: :word, regex: /^[A-Za-z_]+/ },
-      { type: :string, regex: /^`[^`\\]*(?:\\.[^`\\]*)*`/ },
-      { type: :string, regex: /^"[^"\\]*(?:\\.[^"\\]*)*"/ },
-      { type: :string, regex: /^'[^'\\]*(?:\\.[^'\\]*)*'/ },
+    MATCHES = [
+      { name: :comment, regex: /\A\/\*.*?\*\//m },
+      { name: :comment, regex: /\A\/\/.*?\n/ },
+      { name: :string, regex: /\A"""\n(.*?)\n"""/m },
+      { name: :double_quoted_string, regex: /\A"((?:[^"\\]|\\.)*)"/ },
+      { name: :single_quoted_string, regex: /\A'((?:[^'\\]|\\.)*)'/ },
+      { name: :backtick_string, regex: /\A`((?:[^`\\]|\\.)*)`/ },
+      { name: :regex, regex: /\A\/(?:[^\/\\]|\\.)*\/[i|m]*/ },
+      { name: :whitespace, regex: /\A\s+/ },
+      { name: :symbol, regex: /\A:([a-z][a-z0-9_]+)/ },
+      { name: :symbol, regex: /\A([a-z][a-z0-9_]+):/ },
+      { name: :identifier, regex: /\A[A-Za-z][A-Za-z0-9_]*/ },
+      { name: :number, regex: /\A[0-9]+/ },
+      { name: :colon, regex: /\A:/ },
+      { name: :question_mark, regex: /\A\?/ },
+      { name: :double_ampersand, regex: /\A&&/ },
+      { name: :double_equals, regex: /\A==/ },
+      { name: :not_equals, regex: /\A!=/ },
+      { name: :equals, regex: /\A=/ },
+      { name: :arrow, regex: /\A\-\>/ },
+      { name: :less_than_or_equals, regex: /\A\<=/ },
+      { name: :less_than, regex: /\A\</ },
+      { name: :greater_than_or_equals, regex: /\A\>=/ },
+      { name: :greater_than, regex: /\A\>/ },
+      { name: :plus, regex: /\A\+/ },
+      { name: :minus, regex: /\A\-/ },
+      { name: :multiply, regex: /\A\*/ },
+      { name: :divide, regex: /\A\\/ },
+      { name: :dot, regex: /\A\./ },
+      { name: :double_pipe, regex: /\A\|\|/ },
+      { name: :pipe, regex: /\A\|/ },
+      { name: :left_paren, regex: /\A\(/ },
+      { name: :right_paren, regex: /\A\)/ },
+      { name: :left_curly, regex: /\A\{/ },
+      { name: :right_curly, regex: /\A\}/ },
+      { name: :comma, regex: /\A\,/ },
+      { name: :left_bracket, regex: /\A\[/ },
+      { name: :right_bracket, regex: /\A\]/ },
     ]
 
-      def tokenize(script)
-        tokens = []
-        # Remove comments
-        script = script.split("\n").select{|line|
-          match_any = false
-          COMMENTS.each do |comment|
-            next if !line.match(comment)
-            match_any = true
+    def self.lex(str)
+      tokens = []
+      while str.length > 0
+        any_match = false
+        MATCHES.each do |token|
+          match = token[:regex].match(str)
+          if match
+            any_match = true
+            if token[:name] == :double_quoted_string
+              val = match[1].gsub('\\"','"')
+              tokens.push({
+                type: :string,
+                value: val
+              })
+            elsif token[:name] == :single_quoted_string
+              val = match[1].gsub("\\'","'")
+              tokens.push({
+                type: :string,
+                value: val
+              })
+            elsif token[:name] == :backtick_string
+              val = match[1].gsub("\\`","`")
+              tokens.push({
+                type: :template_string,
+                value: val
+              })
+            elsif token[:name] == :whitespace
+            elsif token[:name] == :comment
+            else
+              tokens.push({
+                type: token[:name],
+                value: match[1] ? match[1] : match[0]
+              })
+            end
+            raise Exception, "Zero length match" if match[0].length == 0
+            str = str[match[0].length..-1]
             break
           end
-          !match_any
-        }.join(" ")
-        while script.length > 0
-          any_match = false
-          TOKEN_DEFS.each do |td|
-            match = script.match(td[:regex])
-            if match
-              any_match = true
-              if td[:type] != :whitespace
-                tokens.push({type: td[:type], value: match[0]})
-              end
-              raise Exception, "Parse error.  Matched on #{td[:type]}, but match section was empty.  Script: #{script}" if match[0].length == 0
-              script = script.sub(match[0], "")
-              break
-            end
-          end
-          raise Exception, "Parse error.  Could not find a token for code: #{script}" if !any_match
         end
-        return tokens
+        if !any_match
+          puts "___"
+          puts str
+          puts "---"
+          raise Exception, "No match"
+        end
       end
+      return tokens
+    end
   end
 end
